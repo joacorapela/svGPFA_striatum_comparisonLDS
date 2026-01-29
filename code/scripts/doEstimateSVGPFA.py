@@ -37,13 +37,13 @@ def main(argv):
     parser.add_argument("--epoched_spikes_times_filename",
                         help="epoched spikes times filenamepattern",
                         type=str,
-                        default="../../../svGPFA_striatum/results/spikes_times_epochedFirst2In_fixedDurationFalse_simplified.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/spikes_times_epochedFirst2In_fixedDurationFalse.pickle")
     parser.add_argument("--trials_ids_filename", help="trials ids filename",
                         type=str,
-                        default="../../metadata/trialsFrom104To120.csv")
+                        default="../../metadata/trialsIDs_22_38.csv")
     parser.add_argument("--clusters_ids_filename", help="clusters ids filename",
                         type=str,
-                        default="../../metadata/clustersIndices_124_223.ini")
+                        default="../../metadata/clustersIndices_0_121.ini")
     parser.add_argument("--est_init_config_filename_pattern",
                         help="estimation initialization filename pattern",
                         type=str,
@@ -51,15 +51,15 @@ def main(argv):
     parser.add_argument("--estim_res_metadata_filename_pattern",
                         help="estimation result metadata filename pattern",
                         type=str,
-                        default="../../results/{:08d}_estimation_metaData.ini")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_metaData.ini")
     parser.add_argument("--profiling_info_filename_pattern",
                         help="profiling information filename pattern",
                         type=str,
-                        default="../../results/{:08d}_profiling_info.txt")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_profiling_info.txt")
     parser.add_argument("--model_save_filename_pattern",
                         help="model save filename pattern",
                         type=str,
-                        default="../../results/{:08d}_estimatedModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
     parsed, unknown = parser.parse_known_args()
     for arg in unknown:
         if arg.startswith(("-", "--")):
@@ -95,10 +95,6 @@ def main(argv):
     epochs_times = np.array(load_res["epochs_times"])
     clusters_ids = load_res["clusters_ids"]
 
-    breakpoint()
-
-    # breakpoint()
-
     # subset selected_clusters
     selected_clusters = np.genfromtxt(clusters_ids_filename,
                                       delimiter=",", dtype=np.uint64)
@@ -109,7 +105,7 @@ def main(argv):
     )
 
     # get selected_trials_ids
-    selected_trials_ids = np.genfromtxt(trials_ids_filename, dtype=np.uint64)
+    selected_trials_ids = np.genfromtxt(trials_ids_filename, delimiter=',', dtype=np.uint64)
     spikes_times, trials_start_times, trials_end_times, epochs_times = \
             striatumUtils.subset_trials_ids_data(
                 selected_trials_ids=selected_trials_ids,
@@ -183,8 +179,6 @@ def main(argv):
     C = params["initial_params"]["embedding"]["C0"]
     d = params["initial_params"]["embedding"]["d0"]
     Z0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["inducing_points_locs0"]
-
-    breakpoint()
 
     # save estimation initial conditions
     estim_res_config = configparser.ConfigParser()
