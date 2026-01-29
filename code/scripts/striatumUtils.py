@@ -3,13 +3,24 @@ import numpy as np
 
 
 def subset_trials_ids_data(selected_trials_ids, trials_ids, spikes_times,
-                           trials_start_times, trials_end_times):
+                           trials_start_times, trials_end_times, epochs_times):
     indices = np.nonzero(np.in1d(trials_ids, selected_trials_ids))[0]
     spikes_times_subset = [spikes_times[i] for i in indices]
     trials_start_times_subset = trials_start_times[indices]
     trials_end_times_subset = trials_end_times[indices]
+    epochs_times_subset = epochs_times[indices]
 
-    return spikes_times_subset, trials_start_times_subset, trials_end_times_subset
+    return spikes_times_subset, trials_start_times_subset, \
+            trials_end_times_subset, epochs_times_subset
+
+def subset_clusters_data(selected_clusters, clusters,
+                             spikes_times):
+    indices = np.nonzero(np.in1d(clusters, selected_clusters))[0]
+    n_trials = len(spikes_times)
+    spikes_times_subset = [[spikes_times[r][i] for i in indices]
+                           for r in range(n_trials)]
+
+    return spikes_times_subset
 
 def getNeuronSpikesTimesAndRegion(cluster_id, spikes_times, clusters_ids,
                                   regions):
