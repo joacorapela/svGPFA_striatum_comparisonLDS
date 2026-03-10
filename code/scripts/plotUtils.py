@@ -4,26 +4,116 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
-def build_events_df(start_time_sec, end_time_sec, transition_data,
-                    ports_linetypes, ports_colors,
-                    # start_poke_in_time_col_name="Start_Poke_in_time",
+def build_events_df(trials_ids, transitions_data,
+                    ports_markers, ports_colors,
+                    start_time_sec=-np.inf, end_time_sec=np.inf,
+                    trial_id_col_name="Trial_id",
                     start_poke_in_time_col_name="P1_IN_Ephys_TS",
                     start_port_col_name="Start_Port"):
+    trial_ids_mask = [trans_trial_id in trials_ids for trans_trial_id in
+                      transitions_data[trial_id_col_name]]
     mask = np.logical_and(
-        start_time_sec<=transition_data[start_poke_in_time_col_name],
-        transition_data[start_poke_in_time_col_name]<end_time_sec
+        trial_ids_mask,
+        start_time_sec<=transitions_data[start_poke_in_time_col_name],
+        transitions_data[start_poke_in_time_col_name]<end_time_sec
     )
-    subset_transition_data = transition_data[mask]
-    event_time = subset_transition_data[start_poke_in_time_col_name]
-    ports_names = subset_transition_data[start_port_col_name]
-    event_line_type = [ports_linetypes[port_name]
-                       for port_name in ports_names]
+    subset_transitions_data = transitions_data[mask]
+    ports_names = subset_transitions_data[start_port_col_name]
+    event_time = subset_transitions_data[start_poke_in_time_col_name]
+    event_trial_id = subset_transitions_data[trial_id_col_name]
+    event_marker = [ports_markers[port_name]
+                    for port_name in ports_names]
     event_color = [ports_colors[port_name]
                    for port_name in ports_names]
-    answer = pd.DataFrame(dict(event_time=event_time,
-                               event_line_type=event_line_type,
+    answer = pd.DataFrame(dict(event_name=ports_names,
+                               event_trial_id=event_trial_id,
+                               event_time=event_time,
+                               event_marker=event_marker,
                                event_color=event_color))
     return answer
+
+def buildMarkedEventsInfo(events_df):
+    """
+    answer:
+        marked_events_trial_ids[r]: float, trial_id of the rth trial
+        marked_events_times[r]: list of float, times of events in rth trial
+        marked_events_colors[r]: list of floats, colors of events in rth trial
+        marked_events_markers[r]: list of floats, markers of events in rth trial
+
+    """
+
+    trials_ids = np.unique(events_df["event_trial_id"])
+    n_trials = len(trials_ids)
+    marked_events_trial_ids = [None for r in range(n_trials)]
+    marked_events_times = [None for r in range(n_trials)]
+    marked_events_colors = [None for r in range(n_trials)]
+    marked_events_markers = [None for r in range(n_trials)]
+
+    for r, trial_id in enumerate(trials_ids):
+        trial_events_df = events_df[events_df["event_trial_id"]==trial_id]
+        n_items_in_trial = len(trial_events_df)
+        marked_events_trial_ids[r] = trial_id
+        trial_times = [None for i in range(n_items_in_trial)]
+        trial_colors = [None for i in range(n_items_in_trial)]
+        trial_markers = [None for i in range(n_items_in_trial)]
+        for i in range(n_items_in_trial):
+            trial_times[i] = trial_events_df.iloc[i]["event_time"]
+            trial_colors[i] = trial_events_df.iloc[i]["event_color"]
+            trial_markers[i] = trial_events_df.iloc[i]["event_marker"]
+        marked_events_times[r] = trial_times
+        marked_events_colors[r] = trial_colors
+        marked_events_markers[r] = trial_markers
+    return marked_events_trial_ids, marked_events_times, marked_events_colors, marked_events_markers
+
+def buildMarkedEventsInfoFromTransitions(
+        transitions_data, trials_ids, port_numbers=np.array([1, 2, 3, 4, 5, 6, 7]),
+        port_colors=np.array(["green", "red", "cyan", "yellow", "purple",
+                              "blue", "magenta"]),
+        stage_markers=["cross", "circle"],
+        trial_id_colname="Trial_id",
+        port_in_time_colname="P1_IN_Ephys_TS",
+        port_out_time_colname="P1_OUT_Ephys_TS",
+        start_port_colname="Start_Port"):
+    n_trials = len(trials_ids)
+    marked_events_times = [None for r in range(n_trials)]
+    marked_events_colors = [None for r in range(n_trials)]
+    marked_events_markers = [None for r in range(n_trials)]
+    marked_events_labels = [None for r in range(n_trials)]
+    for r, trial_id in enumerate(trials_ids):
+        trial_transitions_data = \
+            transitions_data[transitions_data[trial_id_colname]==trial_id]
+        trial_marked_events_times = []
+        trial_marked_events_colors = []
+        trial_marked_events_markers = []
+        trial_marked_events_labels = []
+        for i in range(trial_transitions_data.shape[0]):
+            trial_marked_events_times.append(
+                trial_transitions_data.iloc[i][port_in_time_colname],
+            )
+            trial_marked_events_times.append(
+                trial_transitions_data.iloc[i][port_out_time_colname],
+            )
+
+            port_number_index = np.where(
+                port_numbers == trial_transitions_data.iloc[i][start_port_colname])[0].item()
+
+            trial_marked_events_colors.append(port_colors[port_number_index])
+            trial_marked_events_colors.append(port_colors[port_number_index])
+
+            trial_marked_events_markers.append(stage_markers[0])
+            trial_marked_events_markers.append(stage_markers[1])
+
+            trial_marked_events_labels.append(
+                f"enter port {port_numbers[port_number_index]}")
+            trial_marked_events_labels.append(
+                f"exit port {port_numbers[port_number_index]}")
+
+        marked_events_times[r] = trial_marked_events_times
+        marked_events_colors[r] = trial_marked_events_colors
+        marked_events_markers[r] = trial_marked_events_markers
+        marked_events_labels[r] = trial_marked_events_labels
+    return marked_events_times, marked_events_colors, marked_events_markers, \
+           marked_events_labels
 
 def add_events_vlines(fig, events_df):
     n_events = events_df.shape[0]
