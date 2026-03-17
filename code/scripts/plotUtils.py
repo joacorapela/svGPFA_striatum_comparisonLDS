@@ -4,31 +4,24 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
-def build_events_df(trials_ids, transitions_data,
-                    ports_markers, ports_colors,
-                    start_time_sec=-np.inf, end_time_sec=np.inf,
-                    trial_id_col_name="Trial_id",
+def build_events_df(start_time_sec, end_time_sec, transition_data,
+                    ports_linetypes, ports_colors,
+                    # start_poke_in_time_col_name="Start_Poke_in_time",
                     start_poke_in_time_col_name="P1_IN_Ephys_TS",
                     start_port_col_name="Start_Port"):
-    trial_ids_mask = [trans_trial_id in trials_ids for trans_trial_id in
-                      transitions_data[trial_id_col_name]]
     mask = np.logical_and(
-        trial_ids_mask,
-        start_time_sec<=transitions_data[start_poke_in_time_col_name],
-        transitions_data[start_poke_in_time_col_name]<end_time_sec
+        start_time_sec<=transition_data[start_poke_in_time_col_name],
+        transition_data[start_poke_in_time_col_name]<end_time_sec
     )
-    subset_transitions_data = transitions_data[mask]
-    ports_names = subset_transitions_data[start_port_col_name]
-    event_time = subset_transitions_data[start_poke_in_time_col_name]
-    event_trial_id = subset_transitions_data[trial_id_col_name]
-    event_marker = [ports_markers[port_name]
-                    for port_name in ports_names]
+    subset_transition_data = transition_data[mask]
+    event_time = subset_transition_data[start_poke_in_time_col_name]
+    ports_names = subset_transition_data[start_port_col_name]
+    event_line_type = [ports_linetypes[port_name]
+                       for port_name in ports_names]
     event_color = [ports_colors[port_name]
                    for port_name in ports_names]
-    answer = pd.DataFrame(dict(event_name=ports_names,
-                               event_trial_id=event_trial_id,
-                               event_time=event_time,
-                               event_marker=event_marker,
+    answer = pd.DataFrame(dict(event_time=event_time,
+                               event_line_type=event_line_type,
                                event_color=event_color))
     return answer
 
