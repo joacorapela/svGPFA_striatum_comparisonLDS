@@ -1,5 +1,4 @@
 
-
 import sys
 import warnings
 import configparser
@@ -18,16 +17,42 @@ import plotUtils
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_res_number", help="estimation result number",
-                        type=int, default=28719499)
+                        type=int,
+                        default=42976344)
+                        # default=34655634)
+                        # default=22746506)
+                        # default=92418550)
+                        # default=25058234)
+                        # default=28563541)
+                        # default=6092425)
+                        # default=1283092)
+                        # default=54368807)
+                        # default=57339587)
+                        # default=33576128)
+                        # default=30172705)
+                        # default=61182613)
+                        # default=96671330)
+                        # default=60672580)
+                        # default=92037639)
+                        # default=43638132)
+                        # default=65922524)
+                        # default=74463115)
+                        # default=28719499)
+    parser.add_argument("--inferred",
+                        help="variables were inferred and not estimated",
+                        action="store_true")
     parser.add_argument("--ports_to_plot",
                         help="ports to plot", type=str,
                         default="1,2,3,4,5,6,7")
+    parser.add_argument("--ports_markers_str",
+                        help="markers for ports", type=str,
+                        default="circle,circle,circle,circle,circle,circle,circle")
     parser.add_argument("--ports_linetypes_str",
                         help="linetypes for ports", type=str,
                         default="solid,solid,solid,solid,solid,solid,solid")
     parser.add_argument("--ports_colors_str",
                         help="colors for ports", type=str,
-                        default="blue,red,cyan,yellow,purple,green,magenta")
+                        default="green,red,cyan,yellow,purple,blue,magenta")
     parser.add_argument("--trials_boundaries_linetypes_str",
                         help="linetypes for trials boundaries", type=str,
                         default="solid,dash")
@@ -36,13 +61,14 @@ def main(argv):
                         default="black,black")
     parser.add_argument("--transition_data_filename",
                         help="transition data filename", type=str,
-                        default="/nfs/gatsbystor/rapela/work/ucl/gatsby-swc/gatsby/svGPFA/repos/projects/svGPFA_striatum/data/Transition_data_sync.csv")
+                        default="/ceph/sjones/projects/sequence_squad/organised_data/animals/EJT178_implant1/recording6_29-03-2022/behav_sync/2_task/Transition_data_sync.csv")
+                        # default="/nfs/gatsbystor/rapela/work/ucl/gatsby-swc/gatsby/svGPFA/repos/projects/svGPFA_striatum/data/Transition_data_sync.csv")
     parser.add_argument("--model_save_filename_pattern",
                         help="saved model filename pattern", type=str,
-                        default="../../results/{:08d}_estimatedModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
     parser.add_argument("--latents_fig_filename_pattern",
                         help="latents figure filename pattern", type=str,
-                        default="../../figures/{:08d}_orthonormalized_nonEpoched_latents.{{:s}}")
+                        default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_orthonormalized_nonEpoched_latents.{{:s}}")
 #     parser.add_argument("--events_names",
 #                         help="names of marked events (e.g., start_time, target_on_time, go_cue_time, move_onset_time, stop_time)",
 #                         type=str,
@@ -56,7 +82,9 @@ def main(argv):
     args = parser.parse_args()
 
     est_res_number = args.est_res_number
+    inferred = args.inferred
     ports_to_plot = [int(port_str) for port_str in args.ports_to_plot.split(",")]
+    ports_markers_str = args.ports_markers_str.split(",")
     ports_linetypes_str = args.ports_linetypes_str.split(",")
     ports_colors_str = args.ports_colors_str.split(",")
     trials_boundaries_linetypes_str = args.trials_boundaries_linetypes_str.split(",")
@@ -65,6 +93,7 @@ def main(argv):
     model_save_filename_pattern = args.model_save_filename_pattern
     latents_fig_filename_pattern = args.latents_fig_filename_pattern.format(est_res_number)
 
+    ports_markers = dict(zip(ports_to_plot, ports_markers_str))
     ports_linetypes = dict(zip(ports_to_plot, ports_linetypes_str))
     ports_colors = dict(zip(ports_to_plot, ports_colors_str))
 
@@ -73,11 +102,12 @@ def main(argv):
 #     events_markers = [str for str in args.events_markers[1:-1].split(",")]
 
     model_save_filename = model_save_filename_pattern.format(est_res_number)
-    latentsFigFilenamePattern = "../../figures/{:08d}_orthonormalized_nonEpoched_latents.{{:s}}".format(est_res_number)
+#     latentsFigFilenamePattern = "../../figures/{:08d}_orthonormalized_nonEpoched_latents.{{:s}}".format(est_res_number)
 
     with open(model_save_filename, "rb") as f:
         est_results = pickle.load(f)
-    trials_ids = est_results["trials"].tolist()
+    final_lower_bound = est_results["lower_bound_hist"][-1]
+    trials_ids = est_results["trials_ids"].tolist()
     kernels_types = est_results["kernels_types"]
     clusters = est_results["selected_clusters"]
     # clusters = est_results["clusters_ids"]
@@ -85,15 +115,22 @@ def main(argv):
     leg_quad_points = est_results["estimation_params"]["ell_calculation_params"]["leg_quad_points"]
     reg_param = est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
     estimated_params = est_results["estimated_params"]
+    if inferred:
+        fixed_params = est_results["fixed_params"][0]
     trials_start_times = est_results["trials_start_times"]
     trials_end_times = est_results["trials_end_times"]
     epochs_times = est_results["epochs_times"]
 
     vMean = estimated_params["variational_mean"]
     vChol = estimated_params["variational_chol_vecs"]
-    C = estimated_params["C"]
-    d = estimated_params["d"]
-    kernels_params = estimated_params["kernels_params"]
+    if inferred:
+        C = fixed_params["C"]
+        d = fixed_params["d"]
+        kernels_params = fixed_params["kernels_params"]
+    else:
+        C = estimated_params["C"]
+        d = estimated_params["d"]
+        kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
     # index to the original spikes
@@ -188,10 +225,12 @@ def main(argv):
         xlabel="Time (sec)")
 
     ports_events_df = plotUtils.build_events_df(
+        # trials_ids=trials_ids,
         start_time_sec=start_time_sec,
         end_time_sec=end_time_sec,
         transition_data=transition_data,
         ports_linetypes=ports_linetypes,
+        # ports_markers=ports_markers,
         ports_colors=ports_colors)
 
     plotUtils.add_events_vlines(fig=fig, events_df=ports_events_df)
@@ -208,7 +247,8 @@ def main(argv):
                                       )
 
     plotUtils.add_events_vlines(fig=fig, events_df=trial_boundaries_df)
-
+    title = f"Lower bound: {final_lower_bound:.02f}"
+    fig.update_layout(title=title)
     fig.write_image(latents_fig_filename_pattern.format("png"))
     fig.write_html(latents_fig_filename_pattern.format("html"))
 
