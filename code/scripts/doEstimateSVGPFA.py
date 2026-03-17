@@ -25,7 +25,7 @@ def main(argv):
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_init_number", help="estimation init number",
-                        type=int, default=15)
+                        type=int, default=17)
     parser.add_argument("--n_latents", help="number of latent processes",
                         type=int, default=10)
     parser.add_argument("--common_n_ind_points",
@@ -37,13 +37,15 @@ def main(argv):
     parser.add_argument("--epoched_spikes_times_filename",
                         help="epoched spikes times filenamepattern",
                         type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/spikes_times_epochedFirst2In_fixedDurationFalse.pickle")
+                        default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/96439322_epoched_spikes_times.pickle")
     parser.add_argument("--trials_ids_filename", help="trials ids filename",
                         type=str,
-                        default="../../metadata/trialsIDs_22_38.csv")
+                        default="../../metadata/trialsIDsFrom42To141.csv")
+                        # default="../../metadata/trialsIDsFrom142To241.csv")
+                        # default="../../metadata/trialsIDs_372_414.csv")
     parser.add_argument("--clusters_ids_filename", help="clusters ids filename",
                         type=str,
-                        default="../../metadata/clustersIndices_0_121.ini")
+                        default="../../metadata/clustersIDs_striatum.csv")
     parser.add_argument("--est_init_config_filename_pattern",
                         help="estimation initialization filename pattern",
                         type=str,
@@ -116,12 +118,8 @@ def main(argv):
                 epochs_times=epochs_times,
             )
 
-    # breakpoint()
-
     n_trials = len(spikes_times)
     n_clusters = len(spikes_times[0])
-
-    # breakpoint()
 
     #    build dynamic parameter specifications
     args_info = svGPFA.utils.initUtils.getArgsInfo()
@@ -188,10 +186,8 @@ def main(argv):
         "clusters_ids": clusters_ids,
         "nLatents": n_latents,
         "common_n_ind_points": common_n_ind_points,
-        # "max_trial_duration": max_trial_duration,
         "epoched_spikes_times_filename": epoched_spikes_times_filename,
     }
-    # estim_res_config["optim_params"] = params["optim_params"]
     estim_res_config["estimation_params"] = {"est_init_number":
                                              est_init_number}
     with open(estim_res_metadata_filename, "w") as f:
@@ -203,7 +199,8 @@ def main(argv):
     em.init(spikesTimesArray=spikes_times_array,
             validSpikesTimesMask=valid_spikes_times_mask, kernels=kernels,
             legQuadPoints=leg_quad_points, legQuadWeights=leg_quad_weights,
-            reg_param=params["optim_params"]["prior_cov_reg_param"])
+            reg_param=params["optim_params"]["prior_cov_reg_param"],
+           )
 
     # perform estimation
     params0 = dict(
@@ -215,74 +212,26 @@ def main(argv):
         ind_points_locs=Z0,
     )
 
+    optim_params = dict(
+        jit=bool(est_init_config["optim_params"]["in_steps_jit"]),
+        maxiter=int(est_init_config["optim_params"]["in_steps_maxiter"]),
+        tol=float(est_init_config["optim_params"]["in_steps_tol"]),
+        max_stepsize=float(est_init_config["optim_params"]["in_steps_max_stepsize"]),
+        em_tol=float(est_init_config["optim_params"]["in_steps_em_tol"]),
+        max_cont_lb_below_thr=int(est_init_config["optim_params"]["in_steps_max_cont_lb_below_thr"]),
+    )
+
     if profile:
         profiling_info_filename_pattern = \
             profiling_info_filename_pattern.format(estResNumber)
 
-    if params["optim_params"]["optim_method"] == "ECM":
-        optim_params = dict(
-            n_em_iterations=params["optim_params"]["em_maxiter"],
-            em_tol=params["optim_params"]["em_tol"],
-            variational_estimate=params["optim_params"]["estep_estimate"],
-            variational_params=dict(
-                jit=params["optim_params"]["estep_jit"],
-                tol=params["optim_params"]["estep_tol"],
-                maxiter=params["optim_params"]["estep_maxiter"],
-                max_stepsize=params["optim_params"]["estep_max_stepsize"],
-                history_size=params["optim_params"]["estep_history_size"],
-            ),
-            preIntensity_estimate=params["optim_params"]["mstep_preIntensity_estimate"],
-            preIntensity_params=dict(
-                jit=params["optim_params"]["mstep_preIntensity_jit"],
-                tol=params["optim_params"]["mstep_preIntensity_tol"],
-                maxiter=params["optim_params"]["mstep_preIntensity_maxiter"],
-                max_stepsize=params["optim_params"]["mstep_preIntensity_max_stepsize"],
-                history_size=params["optim_params"]["mstep_preIntensity_history_size"],
-            ),
-            kernels_estimate=params["optim_params"]["mstep_kernels_estimate"],
-            kernels_params=dict(
-                jit=params["optim_params"]["mstep_kernels_jit"],
-                tol=params["optim_params"]["mstep_kernels_tol"],
-                maxiter=params["optim_params"]["mstep_kernels_maxiter"],
-                max_stepsize=params["optim_params"]["mstep_kernels_max_stepsize"],
-                history_size=params["optim_params"]["mstep_kernels_history_size"],
-            ),
-            indpointslocs_estimate=params["optim_params"]["mstep_indpointslocs_estimate"],
-            indpointslocs_params=dict(
-                jit=params["optim_params"]["mstep_indpointslocs_jit"],
-                tol=params["optim_params"]["mstep_indpointslocs_tol"],
-                maxiter=params["optim_params"]["mstep_indpointslocs_maxiter"],
-                max_stepsize=params["optim_params"]["mstep_indpointslocs_max_stepsize"],
-                history_size=params["optim_params"]["mstep_indpointslocs_history_size"],
-            ),
-        )
-        start_time = time.time()
-        res = em.maximize_jaxopt_LBFGS_ECM(params0=params0, optim_params=optim_params)
-        elapsed_time = time.time() - start_time
-    elif params["optim_params"]["optim_method"] == "in_steps":
-        optim_params = dict(
-            jit=bool(est_init_config["optim_params"]["in_steps_jit"]),
-            maxiter=int(est_init_config["optim_params"]["in_steps_maxiter"]),
-            tol=float(est_init_config["optim_params"]["in_steps_tol"]),
-            max_stepsize=float(est_init_config["optim_params"]["in_steps_max_stepsize"]),
-        )
-        start_time = time.time()
-        res = em.maximize_jaxopt_LBFGS_in_steps(params0=params0, optim_params=optim_params)
-        elapsed_time = time.time() - start_time
-    elif params["optim_params"]["optim_method"] == "one_call":
-        optim_params = dict(
-            jit=bool(est_init_config["optim_params"]["one_call_jit"]),
-            maxiter=int(est_init_config["optim_params"]["one_call_max_iter"]),
-            tol=float(est_init_config["optim_params"]["one_call_tol"]),
-            max_stepsize=float(est_init_config["optim_params"]["one_call_max_stepsize"]),
-        )
-        start_time = time.time()
-        params, state = em.maximize_jaxopt_LBFGS_one_call(params0=params0, optim_params=optim_params)
-        elapsed_time = time.time() - start_time
-        print(f"Lower bound: {-state.value.item()}")
-        res = {"params": params, "state": state, "elapsed_time": elapsed_time}
-    else:
-        raise ValueError('invalid optim_method={params["optim_params"]["optim_method"]}')
+    start_time = time.time()
+    res = em.maximize_jaxopt_LBFGS_in_steps(
+        optim_func=em._eval_func_params_as_dict, params0=params0,
+        optim_params=optim_params,
+    )
+    elapsed_time = time.time() - start_time
+
     print(f"elapsed time={elapsed_time}")
 
     if profile:
@@ -291,12 +240,12 @@ def main(argv):
 
     resultsToSave = res.copy()
     resultsToSave["estimated_params"] = resultsToSave.pop("params")
-    resultsToSave["trials"] = selected_trials_ids
+    resultsToSave["trials_ids"] = selected_trials_ids
     resultsToSave["selected_clusters"] = selected_clusters
     resultsToSave["clusters_ids"] = clusters_ids
     resultsToSave["kernels_types"] = kernels_types
     resultsToSave["estimation_params"] = params
-    resultsToSave["optim_params"] = optim_params
+    # resultsToSave["optim_params"] = optim_params
     resultsToSave["trials_start_times"] = trials_start_times
     resultsToSave["trials_end_times"] = trials_end_times
     resultsToSave["epochs_times"] = epochs_times
@@ -305,7 +254,7 @@ def main(argv):
         pickle.dump(resultsToSave, f)
         print("Saved results to {:s}".format(modelSaveFilename))
 
-    # breakpoint()
+    breakpoint()
 
 
 if __name__ == "__main__":
