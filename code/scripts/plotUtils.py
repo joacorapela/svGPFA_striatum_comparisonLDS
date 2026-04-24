@@ -5,21 +5,28 @@ import plotly.graph_objects as go
 
 
 def build_events_df(start_time_sec, end_time_sec, transition_data,
-                    ports_linetypes, ports_colors,
-                    # start_poke_in_time_col_name="Start_Poke_in_time",
-                    start_poke_in_time_col_name="P1_IN_Ephys_TS",
+                    in_ports_linetypes, out_ports_linetypes, ports_colors,
+                    poke_in_time_col_name="P1_IN_Ephys_TS",
+                    poke_out_time_col_name="P1_OUT_Ephys_TS",
                     start_port_col_name="Start_Port"):
     mask = np.logical_and(
-        start_time_sec<=transition_data[start_poke_in_time_col_name],
-        transition_data[start_poke_in_time_col_name]<end_time_sec
+        start_time_sec<=transition_data[poke_in_time_col_name],
+        transition_data[poke_out_time_col_name]<end_time_sec
     )
     subset_transition_data = transition_data[mask]
-    event_time = subset_transition_data[start_poke_in_time_col_name]
+    event_time = np.concatenate(
+        (subset_transition_data[poke_in_time_col_name].to_list(),
+         subset_transition_data[poke_out_time_col_name].to_list()),
+    )
     ports_names = subset_transition_data[start_port_col_name]
-    event_line_type = [ports_linetypes[port_name]
-                       for port_name in ports_names]
+    in_line_type = [in_ports_linetypes[port_name]
+                    for port_name in ports_names]
+    out_line_type = [out_ports_linetypes[port_name]
+                    for port_name in ports_names]
+    event_line_type = in_line_type + out_line_type
     event_color = [ports_colors[port_name]
                    for port_name in ports_names]
+    event_color = event_color + event_color
     answer = pd.DataFrame(dict(event_time=event_time,
                                event_line_type=event_line_type,
                                event_color=event_color))
