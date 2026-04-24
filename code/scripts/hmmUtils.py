@@ -102,11 +102,11 @@ def getFilteredBehavioralStates(bins_centers, port_labels, enter_times, exit_tim
 
 def getFilteredBehavioralStatesEpoched(trials_times, epochs_times, port_labels,
                                        enter_times, exit_times):
-    trials_behavioral_states = np.empty_like(trials_times, dtype=np.int8)
-    n_trials = trials_times.shape[0]
+    n_trials = len(trials_times)
+    trials_behavioral_states = [None] * n_trials
     for r in range(n_trials):
-        states_labels, trials_behavioral_states[r, :, 0] = getFilteredBehavioralStates(
-            bins_centers=trials_times[r, :, 0] + epochs_times[r],
+        states_labels, trials_behavioral_states[r] = getFilteredBehavioralStates(
+            bins_centers=trials_times[r][:, 0] + epochs_times[r],
             port_labels=port_labels,
             enter_times=enter_times,
             exit_times=exit_times)
@@ -122,7 +122,7 @@ def getGaussianProbabilities(x, means, covs):
         number of samples.
     :type x: numpy.ndarray of shape (D, N)
     :param means: Mean vectors for each of the K states.
-    :type means: numpy.ndarray of shape (D, K)
+    :type means: numpy.ndarray of shape (D, 1, K)
     :param covs: Covariance matrices for each of the K states.
     :type covs: numpy.ndarray of shape (D, D, K)
     :return: Probability densities (likelihoods) for each sample and state.
@@ -130,18 +130,17 @@ def getGaussianProbabilities(x, means, covs):
     """
 
     N = x.shape[1]
-    K = means.shape[1]
-
+    K = means.shape[2]
     p = np.zeros((N, K))
 
-    for n in range(N):
-        for k in range(K):
-            # Extract the mean vector and covariance matrix for state k
-            mean_k = means[:, k, 0]
-            sigma_k = covs[:, :, k]
+    for k in range(K):
+        # Extract the mean vector and covariance matrix for state k
+        mean_k = means[:, 0, k]
+        sigma_k = covs[:, :, k]
 
-            # multivariate_normal.pdf takes the observation vector, mean, and cov
-            p[n, k] = scipy.stats.multivariate_normal.pdf(x[:, n], mean=mean_k, cov=sigma_k)
+        # multivariate_normal.pdf takes the observation vector, mean, and cov
+        p[:, k] = scipy.stats.multivariate_normal.pdf(x.T, mean=mean_k,
+                                                      cov=sigma_k)
 
     return p
 
@@ -152,19 +151,18 @@ def getGaussianProbabilitiesEpoched(x, means, covs):
     observation across all states.
 
     :param x: Epoched observation vectors where D is the feature dimension,
-        N is the number of samples per trials and T is the number of trials.
-    :type x: numpy.ndarray of shape (D, N, T)
+        N_t is the number of samples in trial T and T is the number of trials.
+    :type x: list of length T, where x[t] is a numpy.ndarray of shape (N_t, D)
     :param means: Mean vectors for each of the K states.
-    :type means: numpy.ndarray of shape (D, K)
+    :type means: numpy.ndarray of shape (D, 1, K)
     :param covs: Covariance matrices for each of the K states.
     :type covs: numpy.ndarray of shape (D, D, K)
     :return: Probability densities (likelihoods) for each sample, state and trial.
-    :rtype: numpy.ndarray of shape (N, K, T)
+    :rtype: list of length T, where answer[t] is numpy.ndarray of shape (N_t, K)
     """
-    _, K, _ = means.shape
-    _, N, T = x.shape
+    T = len(x)
+    p = [None] * T
 
-    p = np.empty((N, K, T))
     for t in range(T):
-        p[:, :, t] = getGaussianProbabilities(x=x[:, :, t], means=means, covs=covs)
+        p[t] = getGaussianProbabilities(x=x[t].T, means=means, covs=covs)
     return p
