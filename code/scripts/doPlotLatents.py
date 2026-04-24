@@ -19,7 +19,12 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_res_number", help="estimation result number",
                         type=int,
-                        default=42976344)
+                        default=69706576)
+                        # default=38426992)
+                        # default=99226606)
+                        # default=99749566)
+                        # default=54368807)
+                        # default=42976344)
                         # default=34655634)
                         # default=22746506)
                         # default=92418550)
@@ -70,10 +75,12 @@ def main(argv):
 #                         type=str, default="[circle,circle,circle,circle,circle]")
     parser.add_argument("--model_filename_pattern",
                         help="model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
+                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
     parser.add_argument("--metadata_filename_pattern",
                         help="metadata filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_metaData.ini")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inference_metaData.ini")
+                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_metaData.ini")
     parser.add_argument("--latents_fig_filename_pattern",
                         help="latents figure filename pattern", type=str,
                         default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_latent{:03d}.{{:s}}")
@@ -147,20 +154,20 @@ def main(argv):
     # clusters = est_results["clusters"]
     leg_quad_points = est_results["estimation_params"]["ell_calculation_params"]["leg_quad_points"]
     reg_param = est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
+    # reg_param = 1e-5
     estimated_params = est_results["estimated_params"]
     if inferred:
-        fixed_params = est_results["fixed_params"][0]
+        fixed_params = est_results["fixed_params"]
 
     vMean = estimated_params["variational_mean"]
     vChol = estimated_params["variational_chol_vecs"]
+    kernels_params = estimated_params["kernels_params"]
     if inferred:
         C = fixed_params["C"]
         d = fixed_params["d"]
-        kernels_params = fixed_params["kernels_params"]
     else:
         C = estimated_params["C"]
         d = estimated_params["d"]
-        kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
     # extract latents means and varances and estimated C
@@ -184,7 +191,6 @@ def main(argv):
                 transitions_data=transitions_data, trials_ids=trials_ids)
 
     align_event_times = []
-    # for r, trial_id in enumerate(marked_events_trials_ids):
     for r, trial_id in enumerate(trials_ids):
         epoch_trial_index = np.where(epochs_trials_ids == trial_id)[0][0]
         align_event_times.append(epochs_times[epoch_trial_index])
