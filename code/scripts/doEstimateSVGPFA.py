@@ -25,7 +25,7 @@ def main(argv):
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_init_number", help="estimation init number",
-                        type=int, default=17)
+                        type=int, default=23)
     parser.add_argument("--n_latents", help="number of latent processes",
                         type=int, default=10)
     parser.add_argument("--common_n_ind_points",
@@ -37,10 +37,12 @@ def main(argv):
     parser.add_argument("--epoched_spikes_times_filename",
                         help="epoched spikes times filenamepattern",
                         type=str,
-                        default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/96439322_epoched_spikes_times.pickle")
+                        default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/47205531_pseudo_epoched_spikes_times.pickle")
+                        # default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/96439322_epoched_spikes_times.pickle")
     parser.add_argument("--trials_ids_filename", help="trials ids filename",
                         type=str,
-                        default="../../metadata/trialsIDsFrom42To141.csv")
+                        default="../../metadata/trialsIDsFrom20200To20299.csv")
+                        # default="../../metadata/trialsIDsFrom42To141.csv")
                         # default="../../metadata/trialsIDsFrom142To241.csv")
                         # default="../../metadata/trialsIDs_372_414.csv")
     parser.add_argument("--clusters_ids_filename", help="clusters ids filename",
