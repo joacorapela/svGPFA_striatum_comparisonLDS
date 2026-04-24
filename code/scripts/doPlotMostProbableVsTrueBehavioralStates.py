@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-
 import hmmUtils
 
 
@@ -15,10 +14,16 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_est_res_number",
                         help="model estimation result number used for learning the HMM model",
-                        type=int, default=54368807)
+                        type=int,
+                        default=556223)
+                        # default=54368807)
     parser.add_argument("--test_est_res_number",
                         help="model estimation result number used for testing the HMM model",
-                        type=int, default=54368807)
+                        type=int,
+                        default=556223)
+                        # default=20263319)
+                        # type=int, default=92418550)
+                        # type=int, default=54368807)
     parser.add_argument("--port_label_col_name",
                         help="column name for port label",
                         type=str, default="Start_Port")
@@ -34,9 +39,10 @@ def main(argv):
     parser.add_argument("--model_filename_pattern",
                         help="model filename pattern", type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
+                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
     parser.add_argument("--most_prob_states_seq_filename_pattern", type=str,
                         help="filtering_res filename pattern",
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/train{:08d}_test{:08d}_hmm_most_prob_state_seq.npz")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/train{:08d}_test{:08d}_hmm_most_prob_state_seq.pickle")
     parser.add_argument("--fig_filename_pattern", type=str,
                         help="figure filename pattern",
                         default="../../figures/EJT178_implant1/recording6_29-03-2022/train{:08d}_test{:08d}_true_vs_inferred_hmm_most_prob_state_seq.{:s}")
@@ -58,18 +64,27 @@ def main(argv):
         est_results = pickle.load(f)
     epochs_times = est_results["epochs_times"]
 
-    load_res = np.load(most_prob_states_seq_filename)
-    trials_times = load_res["trials_times"]
-    most_prob_states_seq = load_res["most_prob_states_seq"]
+    # load_res = np.load(most_prob_states_seq_filename)
+    with open(most_prob_states_seq_filename, "rb") as f:
+        viterbi_res = pickle.load(f)
+    trials_times = viterbi_res["trials_times"]
+    most_prob_states_seq = viterbi_res["most_prob_states_seq"]
 
     # build continuous_time
-    T, N, _ = trials_times.shape # T number of trials, N number of samples per trial
-    continuous_times = np.empty(trials_times.shape[0] * trials_times.shape[1])
+
+    # T, N, _ = trials_times.shape # T number of trials, N number of samples per trial
+    # continuous_times = np.empty(trials_times.shape[0] * trials_times.shape[1])
+    # for t in range(T):
+    #     continuous_times[(t * N):((t + 1) * N)] = trials_times[t, :, 0] + epochs_times[t]
+
+    T = len(trials_times)
+    continuous_times_list = []
     for t in range(T):
-        continuous_times[(t * N):((t + 1) * N)] = trials_times[t, :, 0] + epochs_times[t]
+        continuous_times_list.extend(trials_times[t][:, 0] + epochs_times[t])
+    continuous_times = np.array(continuous_times_list)
 
     # build continuous_most_prob_states_seq
-    continuous_most_prob_states_seq = most_prob_states_seq.flatten()
+    continuous_most_prob_states_seq = np.concatenate(most_prob_states_seq)
 
     test_start_time_sec = continuous_times.min()
     test_end_time_sec = continuous_times.max()
@@ -91,12 +106,14 @@ def main(argv):
         exit_times=exit_times)
 
     fig = go.Figure()
-    trace = go.Bar(x=continuous_times, y=states_seq_true, name="True")
+    # trace = go.Bar(x=continuous_times, y=states_seq_true, name="True")
+    trace = go.Scatter(x=continuous_times, y=states_seq_true, name="True", mode="lines+markers")
     fig.add_trace(trace)
-    trace = go.Bar(x=continuous_times, y=continuous_most_prob_states_seq, name="Estimated")
+    # trace = go.Bar(x=continuous_times, y=continuous_most_prob_states_seq, name="Estimated")
+    trace = go.Scatter(x=continuous_times, y=continuous_most_prob_states_seq, name="Inferred", mode="lines+markers")
     fig.add_trace(trace)
     fig.update_xaxes(title="Time (sec)")
-    fig.update_yaxes(title="Inferred State Number")
+    fig.update_yaxes(title="State Number")
     html_filename = fig_filename_pattern.format(train_est_res_number,
                                                 test_est_res_number,
                                                 "html")
