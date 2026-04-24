@@ -1,0 +1,217 @@
+\documentclass[12pt]{article}
+
+\usepackage{graphicx}
+\usepackage[hypertexnames=false,colorlinks=true,breaklinks]{hyperref}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{natbib}
+\usepackage{apalike}
+\usepackage{amsmath,amssymb}
+
+\newcommand{\estNumber}{99331617}
+
+\title{Detecting replay on Emmett's data with svGPFA}
+\author{Joaqu\'{i}n Rapela\thanks{j.rapela@ucl.ac.uk}}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Here I use svGPFA~\citep{dunckerAndSahani18} to explore the low dimensional
+structure of Emmett's switching-task recordings.
+
+\section{Methods}
+
+\subsection{Data}
+
+We analyzed the spiking activity of all striatal neurons (neuron indices 0-207)
+in electrophysiological recording
+\texttt{EJT178\_implant1/recording6\_29\-03\-2022}.
+%
+Figure~\ref{fig:spikeTimes} plots a sample of spike times used in this
+analysis.
+
+We epoched the recordings from 0.2 seconds before to mouse entered the first
+port (port 2) to 0.2 seconds after it exited the last port (port 7).
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/spike_times_start4045.00_end4345.00.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/spike_times_start4045.00_end4345.00.png}}
+
+    \caption{Example spikes times used in this analysis. We used recording
+    session \texttt{EJT178\_implant1/recording6\_29-03-2022} and neurons
+    indices 0 to 207 in the striatum.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:spikeTimes}
+\end{figure}
+
+\subsection{svGPFA model}
+
+The svGPFA model estimates $K$ latent variables in the form of Gaussian
+processes:
+
+\begin{align*}
+    x_k^{(r)}(t)\sim GP(\mu_k(t), \kappa_k(t,t'))\quad k=1,\ldots,K
+\end{align*}
+
+\noindent I concatenate the latent variables $x_k^{(r)}(t)$ into a latent vector
+$\mathbf{x}^{(r)}(t)$:
+
+\begin{align}
+    \mathbf{x}^{(r)}(t)=\left[\begin{array}{c}
+        x_1^{(r)}(t)\\
+                            \vdots\\
+                            x_K^{(r)}(t)
+                        \end{array}\right]
+    \label{eq:latentsVector}
+\end{align}
+
+The latent variables are combined linearly to produced the log pre-intensity,
+$\mathbf{h}^{(r)}(t)=[h_1^{(r)}(t),\ldots,h_N^{(r)}(t)]^\intercal$, where
+$h_n^{(r)}(t)$ is the log
+pre-intensity of neuron $n$ and trial $r$, for a total of $N$ neurons:
+
+\begin{align}
+    \mathbf{h}^{(r)}(t)=C\mathbf{x}^{(r)}(t)+\mathbf{d}
+    \label{eq:logPreIntensity}
+\end{align}
+
+The log pre-intensity of neuron $n$ and trial $r$ is exponentiated to produce the conditional
+intensity function of neuron $n$ and trial $r$:
+
+\begin{align}
+    \lambda_n^{(r)}(t)=\exp(h_n^{(r)}(t))
+    \label{eq:cif}
+\end{align}
+
+\noindent which can be interpreted as the instantaneous firing rate of neuron
+$n$ and trial $r$ at time $t$.
+
+The conditional intensity function of neuron $n$ in trial $r$ is used to calculate the
+probability of spikes $\{t_{i,n}\}_{i=1}^{\Phi(n,r)}$ in a trial $r$ of length $\tau$:
+
+\begin{align*}
+    P(\{t_{i,n}\}_{i=1}^{\Phi(n,r)}|\lambda_n^{(r)}(t))=\exp\left(-\int_0^\tau\lambda_n^{(r)}(t)dt\right)\prod_{i=1}^{\Phi(n,r)}\lambda_n^{(r)}(t_{i,n})
+\end{align*}
+
+\section{Results}
+
+\listoffigures
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/54368807_orthonormalized_nonEpoched_latents.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/54368807_orthonormalized_nonEpoched_latents.png}}
+    \caption{Orthonormalised latent variables ($\mathbf{x}(t)$ in
+    Eq.~\ref{eq:latentsVector}) inferred for data in the behavioral period
+    trials used to estimate the svGPFA mdoel parameters (i.e., trials 42-141).
+    %
+    Trials have been concatenated in continuous time.
+    %
+    The colored vertical lines indicate `poke\_in` times, with
+    green, red, blue, yellow, purple, cyan and magenta corresponding to ports
+    1 to 7, respectively.
+    %
+    The correct sequence is $2\rightarrow 1\rightarrow 6\rightarrow 3\rightarrow 7$
+    corresponding to
+    $\text{red}\rightarrow\text{green}\rightarrow\text{blue}\rightarrow\text{cyan}\rightarrow\text{magenta}$.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+    \label{fig:inferredLatentsTrain}
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/54368807_hmm_mean.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/54368807_hmm_mean.png}}
+
+    \caption{HMM emission parameters. Inferred means and standard deviations (error
+    bars) of the Gaussian emission model for each latent (i.e., observation)
+    and for each HMM state.}
+
+    \label{fig:hmm_emision_params}
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/54368807_hmm_transition.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/54368807_hmm_transition.png}}
+
+    \caption{HMM transition matrix.}
+
+    \label{fig:hmm_transition_matrix}
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/train54368807_test54368807_true_vs_inferred_hmm_most_prob_state_seq.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/train54368807_test54368807_true_vs_inferred_hmm_most_prob_state_seq.png}}
+
+    \caption{True (blue) versus estimated (red) behavioral states with
+    estimation and inference performed on the same data segment of the
+    behavioral period. The svGPFA and
+    HMM models were estimated with data from trials 42-141. The svGPFA model
+    inferred latents and the HMM inferred behavioral states from the same
+    trials.}
+
+    \label{fig:trueVsInferredStatesTest42-141}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/92418550_orthonormalized_nonEpoched_latents.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/92418550_orthonormalized_nonEpoched_latents.png}}
+
+    \caption{Orthonormalised latent variables inferred from neural data in the
+    behavioral period not used to train svGPFA model parameters (i.e., trials
+    242-341).}
+
+    \label{fig:inferredLatentsTestDuringBehavior}
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/train54368807_test92418550_true_vs_inferred_hmm_most_prob_state_seq.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/train54368807_test92418550_true_vs_inferred_hmm_most_prob_state_seq.png}}
+
+    \caption{True (blue) versus estimated (red) behavioral states, when
+    estimation and inference were done on different data segments of the
+    behavioral period. The svGPFA and HMM models were estimated with data in
+    trials 42-141. The svGPFA model inferred latents and the HMM inferred
+    behavioral states from data in trials 242-341.}
+
+    \label{fig:trueVsInferredStatesTest242-341}
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/99226606_orthonormalized_nonEpoched_latents.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/99226606_orthonormalized_nonEpoched_latents.png}}
+    \caption{Orthonormalised latent variables inferred from data in a
+    non-behavioral block immediately following behavior.}
+
+    \label{fig:inferredLatentsTestDuringPostBehavior}
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/train54368807_test99226606_inferred_hmm_most_prob_state_seq.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/train54368807_test99226606_inferred_hmm_most_prob_state_seq.png}}
+
+    \caption{True (blue) versus estimated (red) behavioral states, when
+    estimation was done with data in the behavioral period and inference was
+    done with data in a non-behavioral period immediately following behavior.}
+
+    \label{fig:trueVsInferredStatesTest6000_7454}
+\end{figure}
+
+\bibliographystyle{apalike}
+\bibliography{latentVariablesModels}
+
+\end{document}
