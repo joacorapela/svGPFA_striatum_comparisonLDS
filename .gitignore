@@ -6,3 +6,8 @@ metadata/*
 results/*
 notes/*
 __pycache__
+old*
+docs/reports/20260329/*
+!docs/reports/20260329/Makefile
+!docs/reports/20260329/svgpfa_report_20260329.tex
+!docs/reports/20260329/latentVariablesModels.bib
