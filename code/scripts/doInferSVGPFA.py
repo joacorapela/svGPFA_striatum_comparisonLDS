@@ -3,11 +3,15 @@ import os.path
 import time
 import random
 import jax
+import jax.numpy as jnp
 import numpy as np
 import pickle
 import argparse
 import configparser
+import cProfile
 
+import gcnu_common.utils.neural_data_analysis
+import gcnu_common.utils.config_dict
 import svGPFA.stats.em
 import svGPFA.utils.miscUtils
 import svGPFA.utils.initUtils
@@ -22,62 +26,47 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_res_number", help="estimation result number",
                         type=int,
-                        # default=66612199) # 1000 iterations
-                        # default=80544908) # 100 iterations
-                        # default=94346696)
-                        # default=556223)
                         default=54368807)
                         # default=33576128)
-    parser.add_argument("--inf_init_number", help="inference init number",
-                        type=int, default=20)
-    parser.add_argument("--epoched_spikes_times_filename",
-                        help="epoched spkes filename",
-                        type=str,
-                        default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/47205531_pseudo_epoched_spikes_times.pickle")
-                        # default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/09172167_pseudo_epoched_spikes_times.pickle")
-                        # default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/69007067_pseudo_epoched_spikes_times.pickle")
-                        # default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/96439322_epoched_spikes_times.pickle")
+    parser.add_argument("--est_init_number", help="estimation init number",
+                        type=int, default=17)
     parser.add_argument("--trials_ids_filename", help="trials ids filename",
                         type=str,
-                        default="../../metadata/trialsIDsFrom20200To20299.csv")
-                        # default="../../metadata/trialsIDsFrom20400To20499.csv")
-                        # default="../../metadata/trialsIDsFrom20300To20399.csv")
-                        # default="../../metadata/trialsIDsFrom20200To20299.csv")
-                        # default="../../metadata/trialsIDsFrom10200To10299.csv")
-                        # default="../../metadata/trialsIDsFrom10000To10099.csv")
+                        default="../../metadata/trialsIDsFrom242To341.csv")
                         # default="../../metadata/trialsIDsFrom142To241.csv")
-    parser.add_argument("--inf_init_filename_pattern",
-                        help="inference initialization filename pattern",
+                        # default="../../metadata/trialsIDsFrom42To141.csv")
+    parser.add_argument("--est_init_config_filename_pattern",
+                        help="estimation initialization filename pattern",
                         type=str,
-                        default="../../metadata/{:08d}_inference_metaData.ini")
-    parser.add_argument("--inf_result_metadata_filename_pattern",
-                        help="inference result metadata filename pattern",
+                        default="../../metadata/{:08d}_estimation_metaData.ini")
+    parser.add_argument("--estim_res_metadata_filename_pattern",
+                        help="estimation result metadata filename pattern",
                         type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inference_metaData.ini")
-    parser.add_argument("--est_result_filename_pattern",
-                        help="estimation result filename pattern",
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_metaData.ini")
+    parser.add_argument("--model_filename_pattern",
+                        help="model save filename pattern",
                         type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
-    parser.add_argument("--inf_result_filename_pattern",
-                        help="inference result filename pattern",
-                        type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
     args = parser.parse_args()
 
     est_res_number = args.est_res_number
-    inf_init_number = args.inf_init_number
-    epoched_spikes_times_filename = args.epoched_spikes_times_filename
+    est_init_number = args.est_init_number
     trials_ids_filename = args.trials_ids_filename
-    inf_init_filename_pattern = args.inf_init_filename_pattern
-    inf_result_metadata_filename_pattern = \
-        args.inf_result_metadata_filename_pattern
-    input_model_filename = args.est_result_filename_pattern.format(est_res_number)
-    output_model_filename_pattern = args.inf_result_filename_pattern
+    est_init_config_filename_pattern = args.est_init_config_filename_pattern
+    estim_res_metadata_filename_pattern = \
+        args.estim_res_metadata_filename_pattern
+    input_model_filename = args.model_filename_pattern.format(est_res_number)
+    output_model_filename_pattern = args.model_filename_pattern
 
-    inf_init_filename = inf_init_filename_pattern.format(
-        inf_init_number)
-    inf_init = configparser.ConfigParser()
-    inf_init.read(inf_init_filename)
+    est_init_config_filename = est_init_config_filename_pattern.format(
+        est_init_number)
+    est_init_config = configparser.ConfigParser()
+    est_init_config.read(est_init_config_filename)
+
+    input_metadata_filename = estim_res_metadata_filename_pattern.format(est_res_number)
+    input_metadata = configparser.ConfigParser()
+    input_metadata.read(input_metadata_filename)
+    epoched_spikes_times_filename = input_metadata["data_params"]["epoched_spikes_times_filename"]
 
     # get spike_times
     with open(epoched_spikes_times_filename, "rb") as f:
@@ -87,21 +76,28 @@ def main(argv):
     trials_start_times = np.array(epoch_spikes_res["trials_start_times"])
     trials_end_times = np.array(epoch_spikes_res["trials_end_times"])
     epochs_times = np.array(epoch_spikes_res["epochs_times"])
-    clusters_ids = epoch_spikes_res["clusters_ids"]
 
-    # get model parameters
     with open(input_model_filename, "rb") as f:
         est_results = pickle.load(f)
     kernels_types = est_results["kernels_types"]
+    # estimation_params = est_results["estimation_params"]
+    # leg_quad_points = estimation_params["ell_calculation_params"]["leg_quad_points"]
+    # leg_quad_weights = estimation_params["ell_calculation_params"]["leg_quad_weights"]
     estimated_params = est_results["estimated_params"]
+    # optim_params = est_results["optim_params"]
     selected_clusters = est_results["selected_clusters"]
-    estimation_params = est_results["estimation_params"]
+    clusters_ids = est_results["clusters_ids"]
+    # trials_ids = est_results["trials"]
+    estimation_trials_start_times = np.array(est_results["trials_start_times"])
+    estimation_trials_end_times = np.array(est_results["trials_end_times"])
+    estimation_epochs_times = np.array(est_results["epochs_times"])
 
     variational_mean = estimated_params["variational_mean"]
     variational_chol_vecs = estimated_params["variational_chol_vecs"]
     C = estimated_params["C"]
     d = estimated_params["d"]
     kernels_params = estimated_params["kernels_params"]
+    # ind_points_locs = estimated_params["ind_points_locs"]
 
     # subset selected_clusters
     spikes_times = striatumUtils.subset_clusters_data(
@@ -123,23 +119,20 @@ def main(argv):
             )
 
     optim_params = dict(
-        jit=bool(inf_init["optim_params"]["in_steps_jit"]),
-        maxiter=int(inf_init["optim_params"]["in_steps_maxiter"]),
-        tol=float(inf_init["optim_params"]["in_steps_tol"]),
-        max_stepsize=float(inf_init["optim_params"]["in_steps_max_stepsize"]),
-        em_tol=float(inf_init["optim_params"]["in_steps_em_tol"]),
-        max_cont_lb_below_thr=int(inf_init["optim_params"]["in_steps_max_cont_lb_below_thr"]),
+        n_quad=int(est_init_config["optim_params"]["n_quad"]),
+        jit=bool(est_init_config["optim_params"]["in_steps_jit"]),
+        maxiter=int(est_init_config["optim_params"]["in_steps_maxiter"]),
+        tol=float(est_init_config["optim_params"]["in_steps_tol"]),
+        max_stepsize=float(est_init_config["optim_params"]["in_steps_max_stepsize"]),
+        em_tol=float(est_init_config["optim_params"]["in_steps_em_tol"]),
+        max_cont_lb_below_thr=int(est_init_config["optim_params"]["in_steps_max_cont_lb_below_thr"]),
     )
-    estimation_params["optim_params"] = optim_params
 
-    n_quad = int(inf_init["optim_params"]["n_quad"])
     leg_quad_points, leg_quad_weights = \
         svGPFA.utils.miscUtils.getLegQuadPointsAndWeights(
-            n_quad=n_quad,
+            n_quad=optim_params["n_quads"],
             trials_start_times=trials_start_times,
             trials_end_times=trials_end_times)
-    estimation_params["ell_calculation_params"]["leg_quad_points"] = leg_quad_points
-    estimation_params["ell_calculation_params"]["leg_quad_weights"] = leg_quad_weights
 
     n_trials = len(spikes_times)
     n_clusters = len(spikes_times[0])
@@ -147,12 +140,15 @@ def main(argv):
     common_n_ind_points = variational_mean.shape[2]
     n_ind_points = [common_n_ind_points] * n_latents
 
-    ind_points_locs0 = svGPFA.utils.initUtils.buildEquidistantIndPointsLocs0(
+    ell_calculation_params = dict(leg_quad_points=leg_quad_points,
+                                  leg_quad_weights=leg_quad_weights,
+                                 )
+
+    ind_points_locs = svGPFA.utils.initUtils.buildEquidistantIndPointsLocs0(
         n_latents=n_latents, n_trials=n_trials,
         n_ind_points=n_ind_points,
         trials_start_times=trials_start_times,
         trials_end_times=trials_end_times)
-    estimation_params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["inducing_points_locs0"] = ind_points_locs0
 
     # build kernels
     kernels = svGPFA.utils.miscUtils.buildKernels(
@@ -163,8 +159,8 @@ def main(argv):
         svGPFA.utils.miscUtils.buildSpikesTimesArray(spikes_times=spikes_times)
 
     # save estimation initial conditions
-    inf_result_config = configparser.ConfigParser()
-    inf_result_config["data_params"] = {
+    estim_res_config = configparser.ConfigParser()
+    estim_res_config["data_params"] = {
         "trials_ids": selected_trials_ids,
         "selected_clusters": selected_clusters,
         "clusters_ids": clusters_ids,
@@ -172,48 +168,49 @@ def main(argv):
         "common_n_ind_points": common_n_ind_points,
         "epoched_spikes_times_filename": epoched_spikes_times_filename,
     }
-    inf_result_config["inference_params"] = {"est_res_number": est_res_number,
-                                             "inf_init_number": inf_init_number,
-                                         }
+    estim_res_config["estimation_params"] = {"est_res_number":
+                                             est_res_number}
+
     # build output_model_save_filename
-    infPrefixUsed = True
-    while infPrefixUsed:
-        infResNumber = random.randint(0, 10**8)
-        inf_result_metadata_filename = \
-            inf_result_metadata_filename_pattern.format(infResNumber)
-        if not os.path.exists(inf_result_metadata_filename):
-            infPrefixUsed = False
-    output_model_filename = output_model_filename_pattern.format(infResNumber)
+    estPrefixUsed = True
+    while estPrefixUsed:
+        estResNumber = random.randint(0, 10**8)
+        estim_res_metadata_filename = \
+            estim_res_metadata_filename_pattern.format(estResNumber)
+        if not os.path.exists(estim_res_metadata_filename):
+            estPrefixUsed = False
+    output_model_filename = output_model_filename_pattern.format(estResNumber)
 
 
-    with open(inf_result_metadata_filename, "w") as f:
-        inf_result_config.write(f)
-    print(f"Saved {inf_result_metadata_filename}")
+    with open(estim_res_metadata_filename, "w") as f:
+        estim_res_config.write(f)
+    print(f"Saved {estim_res_metadata_filename}")
 
     # initialise estimation
     em = svGPFA.stats.em.EM_JAXopt
     em.init(spikesTimesArray=spikes_times_array,
             validSpikesTimesMask=valid_spikes_times_mask, kernels=kernels,
             legQuadPoints=leg_quad_points, legQuadWeights=leg_quad_weights,
-            reg_param=float(inf_init["optim_params"]["in_steps_max_cont_lb_below_thr"]))
+            reg_param=1e-5)
+            # reg_param=optim_params["prior_cov_reg_param"])
 
     # perform estimation
     params0 = dict(
         variational_mean=variational_mean,
         variational_chol_vecs=variational_chol_vecs,
-        ind_points_locs=ind_points_locs0,
-        kernels_params=kernels_params,
+        ind_points_locs=ind_points_locs,
     )
     additional_params = dict(
         C=C,
         d=d,
+        kernels_params=kernels_params,
     )
     def inferenceOptimFunc(params, additional_params):
         value = em._eval_func(
             vMean=params["variational_mean"],
             vChol=params["variational_chol_vecs"],
             C=additional_params["C"], d=additional_params["d"],
-            kernels_params=params["kernels_params"],
+            kernels_params=additional_params["kernels_params"],
             ind_points_locs=params["ind_points_locs"],
         )
         return value
@@ -234,10 +231,10 @@ def main(argv):
     resultsToSave["clusters_ids"] = clusters_ids
     resultsToSave["kernels_types"] = kernels_types
     resultsToSave["estimation_params"] = estimation_params
+    resultsToSave["optim_params"] = optim_params
     resultsToSave["trials_start_times"] = trials_start_times
     resultsToSave["trials_end_times"] = trials_end_times
     resultsToSave["epochs_times"] = epochs_times
-    resultsToSave["n_quad"] = n_quad
 
     with open(output_model_filename, "wb") as f:
         pickle.dump(resultsToSave, f)
