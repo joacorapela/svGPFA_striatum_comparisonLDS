@@ -10,8 +10,6 @@ import argparse
 import configparser
 import cProfile
 
-import gcnu_common.utils.neural_data_analysis
-import gcnu_common.utils.config_dict
 import svGPFA.stats.em
 import svGPFA.utils.miscUtils
 import svGPFA.utils.initUtils
@@ -80,7 +78,7 @@ def main(argv):
     with open(input_model_filename, "rb") as f:
         est_results = pickle.load(f)
     kernels_types = est_results["kernels_types"]
-    # estimation_params = est_results["estimation_params"]
+    estimation_params = est_results["estimation_params"]
     # leg_quad_points = estimation_params["ell_calculation_params"]["leg_quad_points"]
     # leg_quad_weights = estimation_params["ell_calculation_params"]["leg_quad_weights"]
     estimated_params = est_results["estimated_params"]
@@ -88,9 +86,9 @@ def main(argv):
     selected_clusters = est_results["selected_clusters"]
     clusters_ids = est_results["clusters_ids"]
     # trials_ids = est_results["trials"]
-    estimation_trials_start_times = np.array(est_results["trials_start_times"])
-    estimation_trials_end_times = np.array(est_results["trials_end_times"])
-    estimation_epochs_times = np.array(est_results["epochs_times"])
+    # estimation_trials_start_times = np.array(est_results["trials_start_times"])
+    # estimation_trials_end_times = np.array(est_results["trials_end_times"])
+    # estimation_epochs_times = np.array(est_results["epochs_times"])
 
     variational_mean = estimated_params["variational_mean"]
     variational_chol_vecs = estimated_params["variational_chol_vecs"]
@@ -130,9 +128,10 @@ def main(argv):
 
     leg_quad_points, leg_quad_weights = \
         svGPFA.utils.miscUtils.getLegQuadPointsAndWeights(
-            n_quad=optim_params["n_quads"],
+            n_quad=optim_params["n_quad"],
             trials_start_times=trials_start_times,
             trials_end_times=trials_end_times)
+    del optim_params["n_quad"]
 
     n_trials = len(spikes_times)
     n_clusters = len(spikes_times[0])
@@ -140,9 +139,9 @@ def main(argv):
     common_n_ind_points = variational_mean.shape[2]
     n_ind_points = [common_n_ind_points] * n_latents
 
-    ell_calculation_params = dict(leg_quad_points=leg_quad_points,
-                                  leg_quad_weights=leg_quad_weights,
-                                 )
+    # ell_calculation_params = dict(leg_quad_points=leg_quad_points,
+    #                               leg_quad_weights=leg_quad_weights,
+    #                              )
 
     ind_points_locs = svGPFA.utils.initUtils.buildEquidistantIndPointsLocs0(
         n_latents=n_latents, n_trials=n_trials,
