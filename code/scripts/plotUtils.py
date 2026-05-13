@@ -122,26 +122,6 @@ def add_events_vlines(fig, events_df):
                       line_dash=events_df.iloc[i]["event_line_type"],
                       line_color=events_df.iloc[i]["event_color"])
 
-def get_times_non_epoched(times, epochs_times):
-    # times \in (n_trials, n_time_points_per_trial, 1)
-    # epochs_times \in n_trials
-    # return \in n_trials * n_time_points_per_trial
-    times_non_epoched = epochs_times[0] + times[0, :, 0]
-    for r in range(1, len(epochs_times)):
-        times_non_epoched = np.append(times_non_epoched,
-                                      epochs_times[r] + times[r, :, 0])
-    return times_non_epoched
-
-
-def get_latents_non_epoched(latents):
-    # latents \in (n_trials, n_time_points_per_trial, n_latents)
-    # return \in (n_trials * n_time_points_per_trial, n_latents)
-    n_trials = latents.shape[0]
-    latents_non_epoched = latents[0, :, :]
-    for r in range(1, n_trials):
-        latents_non_epoched = np.vstack((latents_non_epoched, latents[r, :, :]))
-    return latents_non_epoched
-
 def getPlotNonEpochedLatents(times, latents_means, latents_stds,
                              events_names=None,
                              marked_events_times=None,
