@@ -17,12 +17,21 @@ def main(argv):
                         type=int, default=54368807)
     parser.add_argument("--test_est_res_number",
                         help="model estimation result number used for testing the HMM model",
-                        type=int, default=99226606)
-                        # type=int, default=42833278)
-                        # type=int, default=99749566)
-                        # type=int, default=88072043)
-                        # type=int, default=92418550)
-                        # type=int, default=54368807)
+                        type=int,
+                        default=96281561)
+                        # default=7996538)
+                        # default=57514742)
+                        # default=71005668)
+                        # default=87796368)
+                        # default=99226606)
+                        # default=42833278)
+                        # default=99749566)
+                        # default=88072043)
+                        # default=92418550)
+                        # default=54368807)
+    parser.add_argument("--inferred",
+                        help="variables were inferred and not estimated",
+                        action="store_true")
     parser.add_argument("--port_label_col_name",
                         help="column name for port label",
                         type=str, default="Start_Port")
@@ -32,12 +41,15 @@ def main(argv):
     parser.add_argument("--port_exit_times_col_name",
                         help="column name for port exit (ephys) time",
                         type=str, default="P1_OUT_Ephys_TS")
+    parser.add_argument("--estimated_model_filename_pattern",
+                        help="estimated model filename pattern", type=str,
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
+    parser.add_argument("--inferred_model_filename_pattern",
+                        help="inferred model filename pattern", type=str,
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
     parser.add_argument("--transitions_data_filename",
                         help="transition data filename", type=str,
                         default="/ceph/sjones/projects/sequence_squad/organised_data/animals/EJT178_implant1/recording6_29-03-2022/behav_sync/2_task/Transition_data_sync.csv")
-    parser.add_argument("--model_filename_pattern",
-                        help="model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
     parser.add_argument("--most_prob_states_seq_filename_pattern", type=str,
                         help="filtering_res filename pattern",
                         default="../../results/EJT178_implant1/recording6_29-03-2022/train{:08d}_test{:08d}_hmm_most_prob_state_seq.pickle")
@@ -49,11 +61,15 @@ def main(argv):
 
     train_est_res_number = args.train_est_res_number
     test_est_res_number = args.test_est_res_number
+    inferred = args.inferred
     port_label_col_name = args.port_label_col_name
     port_enter_times_col_name = args.port_enter_times_col_name
     port_exit_times_col_name = args.port_exit_times_col_name
+    if inferred:
+        model_filename = args.inferred_model_filename_pattern.format(test_est_res_number)
+    else:
+        model_filename = args.estimated_model_filename_pattern.format(test_est_res_number)
     transitions_data_filename = args.transitions_data_filename
-    model_filename = args.model_filename_pattern.format(test_est_res_number)
     most_prob_states_seq_filename = args.most_prob_states_seq_filename_pattern.format(
         train_est_res_number, test_est_res_number)
     fig_filename_pattern = args.fig_filename_pattern
