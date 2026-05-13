@@ -17,12 +17,17 @@ def main(argv):
     parser.add_argument("--train_est_res_number",
                         help="model estimation result number used for learning the HMM model",
                         type=int,
-                        default=556223)
-                        # default=54368807)
+                        # default=556223)
+                        default=54368807)
     parser.add_argument("--test_est_res_number",
                         help="model estimation result number used for testing the HMM model",
                         type=int,
-                        default=556223)
+                        default=96281561)
+                        # default=7996538)
+                        # default=57514742)
+                        # default=71005668)
+                        # default=87796368)
+                        # default=556223)
                         # type=int, default=20263319)
                         # type=int, default=99226606)
                         # type=int, default=42833278)
@@ -33,10 +38,12 @@ def main(argv):
     parser.add_argument("--inferred",
                         help="variables were inferred and not estimated",
                         action="store_true")
-    parser.add_argument("--model_filename_pattern",
-                        help="model filename pattern", type=str,
+    parser.add_argument("--estimated_model_filename_pattern",
+                        help="estimated model filename pattern", type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
-                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
+    parser.add_argument("--inferred_model_filename_pattern",
+                        help="inferred model filename pattern", type=str,
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
     parser.add_argument("--hmm_params_filename_pattern", type=str,
                         help="hmm parameters filename pattern",
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_hmm_params.{:s}")
@@ -48,7 +55,10 @@ def main(argv):
     train_est_res_number = args.train_est_res_number
     test_est_res_number = args.test_est_res_number
     inferred = args.inferred
-    test_model_filename = args.model_filename_pattern.format(test_est_res_number)
+    if inferred:
+        test_model_filename = args.inferred_model_filename_pattern.format(test_est_res_number)
+    else:
+        test_model_filename = args.estimated_model_filename_pattern.format(test_est_res_number)
     hmm_params_metadata_filename = args.hmm_params_filename_pattern.format(
         train_est_res_number, "ini")
     hmm_params_filename = args.hmm_params_filename_pattern.format(
