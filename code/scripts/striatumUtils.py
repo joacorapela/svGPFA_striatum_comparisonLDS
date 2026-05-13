@@ -2,6 +2,59 @@ import pandas as pd
 import numpy as np
 
 
+def get_times_non_epoched(times, epochs_times):
+    # times \in (n_trials, n_time_points_per_trial, 1)
+    # epochs_times \in n_trials
+    # return \in n_trials * n_time_points_per_trial
+    times_non_epoched = epochs_times[0] + times[0, :, 0]
+    for r in range(1, len(epochs_times)):
+        times_non_epoched = np.append(times_non_epoched,
+                                      epochs_times[r] + times[r, :, 0])
+    return times_non_epoched
+
+
+def get_latents_non_epoched(latents):
+    # latents \in (n_trials, n_time_points_per_trial, n_latents)
+    # return \in (n_trials * n_time_points_per_trial, n_latents)
+    n_trials = latents.shape[0]
+    latents_non_epoched = latents[0, :, :]
+    for r in range(1, n_trials):
+        latents_non_epoched = np.vstack((latents_non_epoched, latents[r, :, :]))
+    return latents_non_epoched
+
+
+def running_correlation(test_pattern, time_series):
+    """
+    Computes the sliding dot product between a template and a longer signal.
+
+    This function iterates through the time_series, calculating the correlation
+    between the test_pattern and a window of the signal at each step. In the
+    context of neural replay, this acts as a matched filter to detect
+    stereotypical latent trajectories.
+
+    :param test_pattern: The template signal to search for (e.g., behavioral latent).
+    :type test_pattern: array_like
+    :param time_series: The continuous signal to search within (e.g., sleep block).
+    :type time_series: array_like
+    :return: The dot product scores for every valid alignment.
+    :rtype: ndarray
+    :raises ValueError: If test_pattern is longer than time_series.
+    """
+    N = len(time_series)
+    L = len(test_pattern)
+
+    if L > N:
+        raise ValueError("test_pattern cannot be longer than time_series.")
+
+    num_scores = N - L + 1
+    answer = np.empty(num_scores)
+
+    for i in range(num_scores):
+        answer[i] = np.corrcoef(time_series[i:i + L], test_pattern)[0, 1]
+
+    return answer
+
+
 def subset_trials_ids_data(selected_trials_ids, trials_ids, spikes_times,
                            trials_start_times, trials_end_times, epochs_times):
     indices = np.nonzero(np.in1d(trials_ids, selected_trials_ids))[0]
