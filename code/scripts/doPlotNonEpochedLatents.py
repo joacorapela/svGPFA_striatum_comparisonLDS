@@ -18,7 +18,20 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_res_number", help="estimation result number",
                         type=int,
-                        default=556223)
+                        default=96281561)
+                        # default=7996538)
+                        # default=71005668)
+                        # default=87796368)
+                        # default=65877289)
+                        # default=90996527)
+                        # default=12870644)
+                        # default=13338803)
+                        # default=556223)
+                        # default=23048734)
+                        # default=93945415)
+                        # default=72528369)
+                        # default=13338803)
+                        # default=556223)
                         # default=23048734)
                         # default=93945415)
                         # default=72528369)
@@ -114,16 +127,10 @@ def main(argv):
     out_ports_linetypes = dict(zip(ports_to_plot, out_ports_linetypes_str))
     ports_colors = dict(zip(ports_to_plot, ports_colors_str))
 
-#     events_names = [str for str in args.events_names[1:-1].split(",")]
-#     events_colors = [str for str in args.events_colors[1:-1].split(",")]
-#     events_markers = [str for str in args.events_markers[1:-1].split(",")]
-
     if inferred:
         model_filename = inferred_model_filename_pattern.format(est_res_number)
     else:
         model_filename = estimated_model_filename_pattern.format(est_res_number)
-
-#     latentsFigFilenamePattern = "../../figures/{:08d}_orthonormalized_nonEpoched_latents.{{:s}}".format(est_res_number)
 
     with open(model_filename, "rb") as f:
         est_results = pickle.load(f)
@@ -134,8 +141,8 @@ def main(argv):
     # clusters = est_results["clusters_ids"]
     # clusters = est_results["clusters"]
     leg_quad_points = est_results["estimation_params"]["ell_calculation_params"]["leg_quad_points"]
-    reg_param = est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
-    # reg_param = 1e-5
+    # reg_param = est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
+    reg_param = 1e-5
     estimated_params = est_results["estimated_params"]
     if inferred:
         fixed_params = est_results["fixed_params"]
@@ -146,13 +153,14 @@ def main(argv):
 
     vMean = estimated_params["variational_mean"]
     vChol = estimated_params["variational_chol_vecs"]
-    kernels_params = estimated_params["kernels_params"]
     if inferred:
         C = fixed_params["C"]
         d = fixed_params["d"]
+        kernels_params = fixed_params["kernels_params"]
     else:
         C = estimated_params["C"]
         d = estimated_params["d"]
+        kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
     # index to the original spikes
