@@ -18,8 +18,11 @@ def main(argv):
                         default=54368807)
     parser.add_argument("--inf_res_number", help="estimation result number",
                         type=int,
-                        default=71005668)
+                        default=84848570)
+                        # default=71005668)
                         # default=87796368)
+    parser.add_argument("--latents_sample_rate", help="plot sample rate",
+                        type=int, default=50)
     parser.add_argument("--test_latent_trial", help="trial of the test latent",
                         type=int,
                         default=42)
@@ -28,10 +31,11 @@ def main(argv):
                         default="[0,1,2,3,4]")
     parser.add_argument("--estimated_model_filename_pattern",
                         help="saved estimated model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parser.add_argument("--inferred_model_filename_pattern",
                         help="saved inferred model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
+                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
     parser.add_argument("--fig_filename_pattern",
                         help="figure filename pattern", type=str,
                         default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_{:08d}_correlation_testLatentTrial_{:03d}_latentIndices{:s}.{{:s}}")
@@ -39,6 +43,7 @@ def main(argv):
 
     est_res_number = args.est_res_number
     inf_res_number = args.inf_res_number
+    latents_sample_rate = args.latents_sample_rate
     test_latent_trial = args.test_latent_trial
     latent_indices = [int(s) for s in args.latent_indices[1:-1].split(",")]
     est_model_filename_pattern = args.estimated_model_filename_pattern
@@ -60,14 +65,14 @@ def main(argv):
     est_reg_param = 1e-5
     est_trials_ids = est_results["trials_ids"]
     estimated_params = est_results["estimated_params"]
-    # trials_start_times = est_results["trials_start_times"]
-    # trials_end_times = est_results["trials_end_times"]
+    est_trials_start_times = est_results["trials_start_times"]
+    est_trials_end_times = est_results["trials_end_times"]
     # est_epochs_times = est_results["epochs_times"]
 
     aux = np.where(est_trials_ids==test_latent_trial)
     if len(aux) == 0:
         raise ValueError(f"Trials {test_latent_trial} not found in {est_model_filename}")
-    test_latent_trial_index = aux[0]
+    test_latent_trial_index = aux[0][0]
 
     est_vMean = estimated_params["variational_mean"]
     est_vChol = estimated_params["variational_chol_vecs"]
@@ -75,14 +80,19 @@ def main(argv):
     est_kernels_params = estimated_params["kernels_params"]
     est_ind_points_locs = estimated_params["ind_points_locs"]
 
+    est_trials_times = svGPFA.utils.miscUtils.getEquispacedTrialsTimes(
+        trials_start_times=est_trials_start_times,
+        trials_end_times=est_trials_end_times,
+        sample_rate=latents_sample_rate)
+
     est_l_means, est_l_vars = \
         svGPFA.utils.statsUtils.computeLatentsWithEquispacedTrialsTimes(
             vMean=est_vMean, vChol=est_vChol, kernels_params=est_kernels_params,
             ind_points_locs=est_ind_points_locs, kernels_types=est_kernels_types,
-            leg_quad_points=est_leg_quad_points, reg_param=est_reg_param)
+            trials_times=est_trials_times, reg_param=est_reg_param)
 
-    est_l_means = np.transpose(jnp.asarray(est_l_means), (1, 2, 0))
-    est_l_vars = np.transpose(jnp.asarray(est_l_vars), (1, 2, 0))
+    est_l_means = [est_l_mean.T for est_l_mean in est_l_means]
+    est_l_vars = [est_l_var.T for est_l_var in est_l_vars]
     est_C = jnp.asarray(est_C)
     est_ol_means, _ = \
         svGPFA.utils.miscUtils.orthogonalizeLatentsWithEquispacedTrialsTimes(
@@ -98,8 +108,8 @@ def main(argv):
     inf_reg_param = 1e-5
     estimated_params = inf_results["estimated_params"]
     fixed_params = inf_results["fixed_params"]
-    # trials_start_times = inf_results["trials_start_times"]
-    # trials_end_times = inf_results["trials_end_times"]
+    inf_trials_start_times = inf_results["trials_start_times"]
+    inf_trials_end_times = inf_results["trials_end_times"]
     inf_epochs_times = inf_results["epochs_times"]
 
     inf_vMean = estimated_params["variational_mean"]
@@ -108,14 +118,19 @@ def main(argv):
     inf_kernels_params = fixed_params["kernels_params"]
     inf_ind_points_locs = estimated_params["ind_points_locs"]
 
+    inf_trials_times = svGPFA.utils.miscUtils.getEquispacedTrialsTimes(
+        trials_start_times=inf_trials_start_times,
+        trials_end_times=inf_trials_end_times,
+        sample_rate=latents_sample_rate)
+
     inf_l_means, inf_l_vars = \
         svGPFA.utils.statsUtils.computeLatentsWithEquispacedTrialsTimes(
             vMean=inf_vMean, vChol=inf_vChol, kernels_params=inf_kernels_params,
             ind_points_locs=inf_ind_points_locs, kernels_types=inf_kernels_types,
-            leg_quad_points=inf_leg_quad_points, reg_param=inf_reg_param)
+            trials_times=inf_trials_times, reg_param=inf_reg_param)
 
-    inf_l_means = np.transpose(jnp.asarray(inf_l_means), (1, 2, 0))
-    inf_l_vars = np.transpose(jnp.asarray(inf_l_vars), (1, 2, 0))
+    inf_l_means = [inf_l_mean.T for inf_l_mean in inf_l_means]
+    inf_l_vars = [inf_l_var.T for inf_l_var in inf_l_vars]
     inf_C = jnp.asarray(inf_C)
     inf_ol_means, _ = \
         svGPFA.utils.miscUtils.orthogonalizeLatentsWithEquispacedTrialsTimes(
@@ -124,13 +139,14 @@ def main(argv):
     inf_times = jnp.asarray(inf_leg_quad_points)
     inf_times_non_epoched = striatumUtils.get_times_non_epoched(
         times=np.array(inf_times), epochs_times=np.array(inf_epochs_times))
-    inf_ol_means_non_epoched = striatumUtils.get_latents_non_epoched(latents=inf_ol_means)
+    inf_ol_means_non_epoched = \
+        striatumUtils.get_equispaced_latents_non_epoched(latents=inf_ol_means)
 
     # computer correlations
     run_cor = [None] * len(latent_indices)
     run_cor_times = [None] * len(latent_indices)
     for i, latent_index in enumerate(latent_indices):
-        test_pattern = est_ol_means[test_latent_trial_index][0, :, latent_index]
+        test_pattern = est_ol_means[test_latent_trial_index][:, latent_index]
         time_series = inf_ol_means_non_epoched[:, latent_index]
         run_cor[i] = striatumUtils.running_correlation(test_pattern=test_pattern, time_series=time_series)
         run_cor_times[i] = inf_times_non_epoched[:len(run_cor[i])]
