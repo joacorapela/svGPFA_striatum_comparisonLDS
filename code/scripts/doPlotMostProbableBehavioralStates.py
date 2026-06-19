@@ -18,7 +18,8 @@ def main(argv):
     parser.add_argument("--test_est_res_number",
                         help="model estimation result number used for testing the HMM model",
                         type=int,
-                        default=96281561)
+                        default=91676545)
+                        # default=96281561)
                         # default=7996538)
                         # default=57514742)
                         # default=71005668)
@@ -46,7 +47,7 @@ def main(argv):
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
     parser.add_argument("--inferred_model_filename_pattern",
                         help="inferred model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parser.add_argument("--transitions_data_filename",
                         help="transition data filename", type=str,
                         default="/ceph/sjones/projects/sequence_squad/organised_data/animals/EJT178_implant1/recording6_29-03-2022/behav_sync/2_task/Transition_data_sync.csv")
