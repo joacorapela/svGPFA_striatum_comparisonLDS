@@ -18,8 +18,11 @@ def main(argv):
                         default=54368807)
     parser.add_argument("--inf_res_number", help="estimation result number",
                         type=int,
+                        default=84848570)
+                        # default=7996538)
+                        # default=91676545)
                         # default=71005668)
-                        default=87796368)
+                        # default=87796368)
     parser.add_argument("--latents_sample_rate", help="plot sample rate",
                         type=int, default=50)
     parser.add_argument("--test_latent_trial", help="trial of the test latent",
@@ -30,10 +33,11 @@ def main(argv):
                         default="[0,1,2,3,4]")
     parser.add_argument("--estimated_model_filename_pattern",
                         help="saved estimated model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parser.add_argument("--inferred_model_filename_pattern",
                         help="saved inferred model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
+                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parser.add_argument("--fig_filename_pattern",
                         help="figure filename pattern", type=str,
                         default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_{:08d}_kl_testLatentTrial_{:03d}_latentIndices{:s}.{{:s}}")
