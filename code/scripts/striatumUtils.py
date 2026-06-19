@@ -23,6 +23,16 @@ def get_latents_non_epoched(latents):
     return latents_non_epoched
 
 
+def get_equispaced_latents_non_epoched(latents):
+    # latents \in (n_trials, n_time_points_per_trial, n_latents)
+    # return \in (n_trials * n_time_points_per_trial, n_latents)
+    n_trials = len(latents)
+    latents_non_epoched = latents[0]
+    for r in range(1, n_trials):
+        latents_non_epoched = np.vstack((latents_non_epoched, latents[r]))
+    return latents_non_epoched
+
+
 def running_correlation(test_pattern, time_series):
     """
     Computes the sliding dot product between a template and a longer signal.
@@ -54,6 +64,52 @@ def running_correlation(test_pattern, time_series):
 
     return answer
 
+
+def running_KL(test_pattern_mean, test_pattern_var, time_series_mean,
+               time_series_var):
+    N = len(time_series_mean)
+    L = len(test_pattern_mean)
+
+    if L > N:
+        raise ValueError("test_pattern cannot be longer than time_series.")
+
+    num_scores = N - L + 1
+    answer = np.empty(num_scores)
+
+    for i in range(num_scores):
+        answer[i] = kl_diagonal_gaussians(
+						mu0=test_pattern_mean,
+                        var0=test_pattern_var,
+                        mu1=time_series_mean[i:i + L],
+                        var1=time_series_var[i:i + L])
+
+    return answer
+
+
+def kl_diagonal_gaussians(mu0, var0, mu1, var1):
+    """
+    Computes the KL divergence D_KL(P || Q) between two multivariate 
+    Gaussians with diagonal covariances.
+    P = N(mu0, diag(var0))
+    Q = N(mu1, diag(var1))
+    """
+    # Number of dimensions/timepoints
+    K = len(mu0) 
+
+    # 1. Ratio of variances
+    term1 = var0 / var1
+
+    # 2. Squared difference of means scaled by target variance
+    term2 = (mu1 - mu0)**2 / var1
+
+    # 3. Logarithm of the ratio of variances: ln(var1) - ln(var0)
+    term3 = np.log(var1) - np.log(var0)
+
+    # The formula: 0.5 * sum( (var0/var1) + ((mu1-mu0)^2 / var1) - 1 + ln(var1/var0) )
+    # Note: sum(-1) across K dimensions is the same as subtracting K
+    answer = 0.5 * np.sum(term1 + term2 - 1 + term3)
+
+    return answer
 
 def subset_trials_ids_data(selected_trials_ids, trials_ids, spikes_times,
                            trials_start_times, trials_end_times, epochs_times):
@@ -198,9 +254,10 @@ def buildMarkedEventsInfo(trials_timing_info, trials_indices,
     return marked_events_times, marked_events_colors, marked_events_markers
 
 
-def buildMarkedEventsInfoFromTransitions(
-        transitions_data, trials_ids, port_numbers=np.array((2, 1, 6, 3, 7)),
-        port_colors=np.array(("orange", "red", "green", "blue", "black")),
+def buildMarkedEventsInfoFromTrialsIDs(
+        trials_ids, transitions_data,
+        port_numbers=np.array([1, 2, 3, 4, 5, 6, 7]),
+        port_colors=np.array(["green", "red", "cyan", "yellow", "purple", "blue", "magenta"]),
         stage_markers=["cross", "circle"],
         trial_id_colname="Trial_id",
         port_in_time_colname="P1_IN_Ephys_TS",
@@ -237,3 +294,56 @@ def buildMarkedEventsInfoFromTransitions(
         marked_events_colors[r] = trial_marked_events_colors
         marked_events_markers[r] = trial_marked_events_markers
     return marked_events_times, marked_events_colors, marked_events_markers
+
+
+def buildMarkedEventsInfoFromTrialsTimes(
+        trials_start_times, trials_end_times, epochs_times, transitions_data,
+        port_numbers=np.array([1, 2, 3, 4, 5, 6, 7]),
+        port_colors=np.array(["green", "red", "cyan", "yellow", "purple", "blue", "magenta"]),
+        stage_linetypes=np.array(["solid", "dash"]),
+        stage_markers=["cross", "circle"],
+        trial_id_colname="Trial_id",
+        port_in_time_colname="P1_IN_Ephys_TS",
+        port_out_time_colname="P1_OUT_Ephys_TS",
+        start_port_colname="Start_Port"):
+    n_trials = len(trials_start_times)
+    marked_events_times = [None for r in range(n_trials)]
+    marked_events_colors = [None for r in range(n_trials)]
+    marked_events_markers = [None for r in range(n_trials)]
+    marked_events_linetypes = [None for r in range(n_trials)]
+    for r in range(n_trials):
+        trial_transition_data = \
+            transitions_data[np.logical_and(
+                epochs_times[r]+trials_start_times[r]<=transitions_data[port_in_time_colname],
+                transitions_data[port_in_time_colname]<epochs_times[r]+trials_end_times[r])]
+        trial_marked_events_times = []
+        trial_marked_events_colors = []
+        trial_marked_events_markers = []
+        trial_marked_events_linetypes = []
+        for i in range(trial_transition_data.shape[0]):
+            trial_marked_events_times.append(
+                trial_transition_data.iloc[i][port_in_time_colname],
+            )
+            trial_marked_events_times.append(
+                trial_transition_data.iloc[i][port_out_time_colname],
+            )
+
+            port_number_index = np.where(
+                port_numbers == trial_transition_data.iloc[i][start_port_colname])[0].item()
+
+            trial_marked_events_colors.append(port_colors[port_number_index])
+            trial_marked_events_colors.append(port_colors[port_number_index])
+
+            trial_marked_events_markers.append(stage_markers[0])
+            trial_marked_events_markers.append(stage_markers[1])
+
+            trial_marked_events_linetypes.append(stage_linetypes[0])
+            trial_marked_events_linetypes.append(stage_linetypes[1])
+
+        marked_events_times[r] = trial_marked_events_times
+        marked_events_colors[r] = trial_marked_events_colors
+        marked_events_markers[r] = trial_marked_events_markers
+        marked_events_linetypes[r] = trial_marked_events_linetypes
+    return marked_events_times, marked_events_colors, marked_events_markers, marked_events_linetypes
+
+
