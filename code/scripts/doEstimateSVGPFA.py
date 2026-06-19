@@ -53,18 +53,18 @@ def main(argv):
                         help="estimation initialization filename pattern",
                         type=str,
                         default="../../metadata/{:08d}_estimation_metaData.ini")
-    parser.add_argument("--estim_res_metadata_filename_pattern",
-                        help="estimation result metadata filename pattern",
-                        type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_metaData.ini")
     parser.add_argument("--profiling_info_filename_pattern",
                         help="profiling information filename pattern",
                         type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_profiling_info.txt")
-    parser.add_argument("--model_save_filename_pattern",
+    parser.add_argument("--est_metadata_filename_pattern",
+                        help="estimation result metadata filename pattern",
+                        type=str,
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_metaData.ini")
+    parser.add_argument("--est_results_filename_pattern",
                         help="model save filename pattern",
                         type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parsed, unknown = parser.parse_known_args()
     for arg in unknown:
         if arg.startswith(("-", "--")):
@@ -80,10 +80,10 @@ def main(argv):
     trials_ids_filename = args.trials_ids_filename
     clusters_ids_filename = args.clusters_ids_filename
     est_init_config_filename_pattern = args.est_init_config_filename_pattern
-    estim_res_metadata_filename_pattern = \
-        args.estim_res_metadata_filename_pattern
+    est_metadata_filename_pattern = \
+        args.est_metadata_filename_pattern
     profiling_info_filename_pattern = args.profiling_info_filename_pattern
-    model_save_filename_pattern = args.model_save_filename_pattern
+    est_results_filename_pattern = args.est_results_filename_pattern
 
     est_init_config_filename = est_init_config_filename_pattern.format(
         est_init_number)
@@ -154,15 +154,15 @@ def main(argv):
 
     kernels_params0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["kernels_params0"]
 
-    # build modelSaveFilename
+    # build est_results_filename
     estPrefixUsed = True
     while estPrefixUsed:
         estResNumber = random.randint(0, 10**8)
-        estim_res_metadata_filename = \
-            estim_res_metadata_filename_pattern.format(estResNumber)
-        if not os.path.exists(estim_res_metadata_filename):
+        est_metadata_filename = \
+            est_metadata_filename_pattern.format(estResNumber)
+        if not os.path.exists(est_metadata_filename):
             estPrefixUsed = False
-    modelSaveFilename = model_save_filename_pattern.format(estResNumber)
+    est_results_filename = est_results_filename_pattern.format(estResNumber)
 
     # build kernels
     kernels = svGPFA.utils.miscUtils.buildKernels(
@@ -193,9 +193,9 @@ def main(argv):
     }
     estim_res_config["estimation_params"] = {"est_init_number":
                                              est_init_number}
-    with open(estim_res_metadata_filename, "w") as f:
+    with open(est_metadata_filename, "w") as f:
         estim_res_config.write(f)
-    print(f"Saved {estim_res_metadata_filename}")
+    print(f"Saved {est_metadata_filename}")
 
     # initialise estimation
     em = svGPFA.stats.em.EM_JAXopt
@@ -253,9 +253,9 @@ def main(argv):
     resultsToSave["trials_end_times"] = trials_end_times
     resultsToSave["epochs_times"] = epochs_times
 
-    with open(modelSaveFilename, "wb") as f:
+    with open(est_results_filename, "wb") as f:
         pickle.dump(resultsToSave, f)
-        print("Saved results to {:s}".format(modelSaveFilename))
+        print("Saved results to {:s}".format(est_results_filename))
 
     breakpoint()
 
