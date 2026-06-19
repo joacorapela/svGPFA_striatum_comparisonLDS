@@ -1,24 +1,31 @@
 
 import sys
 import warnings
+import argparse
 import configparser
 import numpy as np
 import pandas as pd
 import jax.numpy as jnp
 import pickle
-import argparse
+import itertools
 import plotly.graph_objects as go
 
 import svGPFA.utils.miscUtils
 import svGPFA.utils.statsUtils
-import svGPFA.plot.plotUtilsPlotly
+import striatumUtils
 import plotUtils
 
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_res_number", help="estimation result number",
                         type=int,
-                        default=96281561)
+                        default=91676545)
+                        # default=35179010)
+                        # default=69706576)
+                        # default=38426992)
+                        # default=97656976)
+                        # default=20731399)
+                        # default=96281561)
                         # default=7996538)
                         # default=71005668)
                         # default=87796368)
@@ -87,25 +94,16 @@ def main(argv):
                         help="transition data filename", type=str,
                         default="/ceph/sjones/projects/sequence_squad/organised_data/animals/EJT178_implant1/recording6_29-03-2022/behav_sync/2_task/Transition_data_sync.csv")
                         # default="/nfs/gatsbystor/rapela/work/ucl/gatsby-swc/gatsby/svGPFA/repos/projects/svGPFA_striatum/data/Transition_data_sync.csv")
-    parser.add_argument("--estimated_model_filename_pattern",
-                        help="saved estimated model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
-    parser.add_argument("--inferred_model_filename_pattern",
-                        help="saved inferred model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
+    parser.add_argument("--estimation_res_filename_pattern",
+                        help="estimation results filename pattern", type=str,
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
+                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
+    # parser.add_argument("--inferred_model_filename_pattern",
+    #                     help="saved inferred model filename pattern", type=str,
+    #                     default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
     parser.add_argument("--latents_fig_filename_pattern",
                         help="latents figure filename pattern", type=str,
                         default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_orthonormalized_nonEpoched_latents.{{:s}}")
-#     parser.add_argument("--events_names",
-#                         help="names of marked events (e.g., start_time, target_on_time, go_cue_time, move_onset_time, stop_time)",
-#                         type=str,
-#                         default="[start_time,target_on_time,go_cue_time,move_onset_time,stop_time]")
-#     parser.add_argument("--events_colors",
-#                         help="colors for marked events (e.g., start_time, target_on_time, go_cue_time, move_onset_time, stop_time)",
-#                         type=str, default="[black,cyan,magenta,orange,pink]")
-#     parser.add_argument("--events_markers",
-#                         help="markers for marked events (e.g., start_time, target_on_time, go_cue_time, move_onset_time, stop_time)",
-#                         type=str, default="[circle,circle,circle,circle,circle]")
     args = parser.parse_args()
 
     est_res_number = args.est_res_number
@@ -118,8 +116,8 @@ def main(argv):
     trials_boundaries_linetypes_str = args.trials_boundaries_linetypes_str.split(",")
     trials_boundaries_colors_str = args.trials_boundaries_colors_str.split(",")
     transition_data_filename = args.transition_data_filename
-    estimated_model_filename_pattern = args.estimated_model_filename_pattern
-    inferred_model_filename_pattern = args.inferred_model_filename_pattern
+    estimation_res_filename_pattern = args.estimation_res_filename_pattern
+    # inferred_model_filename_pattern = args.inferred_model_filename_pattern
     latents_fig_filename_pattern = args.latents_fig_filename_pattern.format(est_res_number)
 
     ports_markers = dict(zip(ports_to_plot, ports_markers_str))
@@ -127,32 +125,27 @@ def main(argv):
     out_ports_linetypes = dict(zip(ports_to_plot, out_ports_linetypes_str))
     ports_colors = dict(zip(ports_to_plot, ports_colors_str))
 
-    if inferred:
-        model_filename = inferred_model_filename_pattern.format(est_res_number)
-    else:
-        model_filename = estimated_model_filename_pattern.format(est_res_number)
+    estimation_res_filename = estimation_res_filename_pattern.format(est_res_number)
 
-    with open(model_filename, "rb") as f:
-        est_results = pickle.load(f)
-    final_lower_bound = est_results["lower_bound_hist"][-1]
-    trials_ids = est_results["trials_ids"].tolist()
-    kernels_types = est_results["kernels_types"]
-    clusters = est_results["selected_clusters"]
-    # clusters = est_results["clusters_ids"]
-    # clusters = est_results["clusters"]
-    leg_quad_points = est_results["estimation_params"]["ell_calculation_params"]["leg_quad_points"]
-    # reg_param = est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
+    with open(estimation_res_filename, "rb") as f:
+        estimation_res = pickle.load(f)
+    final_lower_bound = estimation_res["lower_bound_hist"][-1]
+    trials_ids = estimation_res["trials_ids"].tolist()
+    kernels_types = estimation_res["kernels_types"]
+    clusters = estimation_res["selected_clusters"]
+    leg_quad_points = estimation_res["estimation_params"]["ell_calculation_params"]["leg_quad_points"]
     reg_param = 1e-5
-    estimated_params = est_results["estimated_params"]
+    estimated_params = estimation_res["estimated_params"]
     if inferred:
-        fixed_params = est_results["fixed_params"]
-        # fixed_params = est_results["fixed_params"][0]
-    trials_start_times = est_results["trials_start_times"]
-    trials_end_times = est_results["trials_end_times"]
-    epochs_times = est_results["epochs_times"]
+        fixed_params = estimation_res["fixed_params"]
+        # fixed_params = estimation_res["fixed_params"][0]
+    trials_start_times = estimation_res["trials_start_times"]
+    trials_end_times = estimation_res["trials_end_times"]
+    epochs_times = estimation_res["epochs_times"]
 
     vMean = estimated_params["variational_mean"]
     vChol = estimated_params["variational_chol_vecs"]
+    # kernels_params = estimated_params["kernels_params"]
     if inferred:
         C = fixed_params["C"]
         d = fixed_params["d"]
@@ -163,59 +156,6 @@ def main(argv):
         kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
-    # index to the original spikes
-#     cluster_index = np.where(clusters==cluster)[0][0]
-
-#     n_trials = len(spikes_times)
-#     clusters_ids_str = " ".join(str(i) for i in clusters_ids)
-#     if len(cluster_index) == 0:
-#         raise ValueError("Cluster id {:d} is not valid. Valid cluster id are ".format(
-#             cluster_index.item()) + clusters_ids_str)
-# 
-#     trials_times = svGPFA.utils.miscUtils.getTrialsTimes(
-#         start_times=trials_start_times,
-#         end_times=trials_end_times,
-#         n_steps=n_time_steps_CIF)
-# 
-#     trials_labels = np.array([str(i) for i in trials_ids])
-
-#     n_trials = len(spikes_times)
-
-#     trials_choices = [trials_info["choice"][trial_id]
-#                       for trial_id in trials_ids]
-#     trials_rewarded = [trials_info["feedbackType"][trial_id]
-#                        for trial_id in trials_ids]
-#     trials_contrast = [trials_info["contrastRight"][trial_id]
-#                        if not np.isnan(trials_info["contrastRight"][trial_id])
-#                        else trials_info["contrastLeft"][trial_id]
-#                        for trial_id in trials_ids]
-#     trials_colors_patterns = [choices_colors_patterns[0]
-#                               if trials_choices[r] == -1
-#                               else choices_colors_patterns[1]
-#                               for r in range(n_trials)]
-#     trials_colors = [trial_color_pattern.format(1.0)
-#                      for trial_color_pattern in trials_colors_patterns]
-#     trials_annotations = {"choice": trials_choices,
-#                           "rewarded": trials_rewarded,
-#                           "contrast": trials_contrast,
-#                           "choice_prev": np.insert(trials_choices[:-1], 0,
-#                                                    np.NAN),
-#                           "rewarded_prev": np.insert(trials_rewarded[:-1], 0,
-#                                                      np.NAN)}
-#
-
-#     events_times = []
-#     for event_name in events_names:
-#         events_times.append([trials_df.iloc[trial_id][event_name]
-#                              for trial_id in trials_ids])
-
-#     marked_events_times, marked_events_colors, marked_events_markers = \
-#         utils.buildMarkedEventsInfo(events_times=events_times,
-#                                     events_colors=events_colors,
-#                                     events_markers=events_markers)
-
-#     align_event_times = [trials_df.iloc[trial_id][align_event_name]
-#                          for trial_id in trials_ids]
     l_means, l_vars = svGPFA.utils.statsUtils.computeLatents(
         vMean=vMean, vChol=vChol, kernels_params=kernels_params,
         ind_points_locs=ind_points_locs, kernels_types=kernels_types,
@@ -228,10 +168,15 @@ def main(argv):
         latents_means=l_means, latents_vars=l_vars, C=estimatedC)
 
     times = jnp.asarray(leg_quad_points)
-    times_non_epoched = plotUtils.get_times_non_epoched(
+    times_non_epoched = striatumUtils.get_times_non_epoched(
         times=np.array(times), epochs_times=np.array(epochs_times))
-    ol_means_non_epoched = plotUtils.get_latents_non_epoched(latents=ol_means)
-    ol_vars_non_epoched = plotUtils.get_latents_non_epoched(latents=ol_vars)
+    ol_means_non_epoched = striatumUtils.get_latents_non_epoched(latents=ol_means)
+    ol_vars_non_epoched = striatumUtils.get_latents_non_epoched(latents=ol_vars)
+
+    n_time_points_per_trial = l_means.shape[1]
+    trials_ids_for_samples = list(itertools.chain.from_iterable(
+        ([trial_id] * n_time_points_per_trial for trial_id in trials_ids)
+    ))
 
     n_latents = ol_means_non_epoched.shape[-1]
     latents_colors_patterns = plotUtils.getLatentsColorPatterns(
@@ -246,22 +191,16 @@ def main(argv):
         times=times_non_epoched,
         latents_means=ol_means_non_epoched,
         latents_stds=np.sqrt(ol_vars_non_epoched),
-#         events_names=events_names,
-#         marked_events_times=marked_events_times,
-#         marked_events_colors=marked_events_colors,
-#         marked_events_markers=marked_events_markers,
-#         trials_colors_patterns=trials_colors_patterns,
         latents_colors_patterns=latents_colors_patterns,
+        trials_ids_for_samples=trials_ids_for_samples,
         xlabel="Time (sec)")
 
     ports_events_df = plotUtils.build_events_df(
-        # trials_ids=trials_ids,
         start_time_sec=start_time_sec,
         end_time_sec=end_time_sec,
         transition_data=transition_data,
         in_ports_linetypes=in_ports_linetypes,
         out_ports_linetypes=out_ports_linetypes,
-        # ports_markers=ports_markers,
         ports_colors=ports_colors)
 
     plotUtils.add_events_vlines(fig=fig, events_df=ports_events_df)
