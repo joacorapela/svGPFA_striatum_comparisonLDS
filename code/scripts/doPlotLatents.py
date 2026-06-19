@@ -19,11 +19,11 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_res_number", help="estimation result number",
                         type=int,
-                        default=69706576)
+                        # default=69706576)
                         # default=38426992)
                         # default=99226606)
                         # default=99749566)
-                        # default=54368807)
+                        default=54368807)
                         # default=42976344)
                         # default=34655634)
                         # default=22746506)
@@ -75,12 +75,20 @@ def main(argv):
 #                         type=str, default="[circle,circle,circle,circle,circle]")
     parser.add_argument("--model_filename_pattern",
                         help="model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_{:s}.pickle")
+                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
                         # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
     parser.add_argument("--metadata_filename_pattern",
                         help="metadata filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inference_metaData.ini")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_{:s}_metaData.ini")
+                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inference_metaData.ini")
                         # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_metaData.ini")
+    parser.add_argument("--rewarded_trials_times_filename", type=str,
+                        help="rewarded trials times filename",
+                        default="/nfs/gatsbystor/rapela/work/ucl/gatsby-swc/collaborations/emmett/repo/results/EJT178_implant1/recording6_29-03-2022/trials_times.csv")
+    parser.add_argument("--clustering_res_filename", type=str,
+                        help="clustering result filename",
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/80586545_trials_times_clustering_result.pickle")
     parser.add_argument("--latents_fig_filename_pattern",
                         help="latents figure filename pattern", type=str,
                         default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_latent{:03d}.{{:s}}")
@@ -106,8 +114,20 @@ def main(argv):
     ports_markers_str = args.ports_markers_str.split(",")
     ports_colors_str = args.ports_colors_str.split(",")
     colorscale_name = args.colorscale_name
-    model_filename = args.model_filename_pattern.format(est_res_number)
-    metadata_filename = args.metadata_filename_pattern.format(est_res_number)
+    if inferred:
+        model_filename = args.model_filename_pattern.format(est_res_number,
+                                                            "inferredModel")
+    else:
+        model_filename = args.model_filename_pattern.format(est_res_number,
+                                                            "estimatedModel")
+    if inferred:
+        metadata_filename = args.metadata_filename_pattern.format(
+            est_res_number, "inference")
+    else:
+        metadata_filename = args.metadata_filename_pattern.format(
+            est_res_number, "estimation")
+    rewarded_trials_times_filename = args.rewarded_trials_times_filename
+    clustering_res_filename = args.clustering_res_filename
     latents_fig_filename_pattern = args.latents_fig_filename_pattern.format(est_res_number, latent_to_plot)
     transitions_data_filename = args.transitions_data_filename
     ortonormalized_latent_fig_filename_pattern = args.ortonormalized_latent_fig_filename_pattern.format(est_res_number, latent_to_plot)
@@ -153,8 +173,8 @@ def main(argv):
     # clusters = est_results["clusters_ids"]
     # clusters = est_results["clusters"]
     leg_quad_points = est_results["estimation_params"]["ell_calculation_params"]["leg_quad_points"]
-    reg_param = est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
-    # reg_param = 1e-5
+    # reg_param = est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
+    reg_param = 1e-5
     estimated_params = est_results["estimated_params"]
     if inferred:
         fixed_params = est_results["fixed_params"]
@@ -229,11 +249,25 @@ def main(argv):
     fig.write_image(latents_fig_filename_pattern.format("png"))
     fig.write_html(latents_fig_filename_pattern.format("html"))
 
-    fig = svGPFA.plot.plotUtilsPlotly.getPlotOrthonormalizedLatentAcrossTrials(
+    rewarded_trials_times = pd.read_csv(rewarded_trials_times_filename)
+    with open(clustering_res_filename, "rb") as f:
+        load_res = pickle.load(f)
+    rs = load_res["rs"]
+    means = load_res["means"]
+
+    if means[0] < means[1]:
+        short_trials_index = 0
+    else:
+        short_trials_index = 1
+    short_trials_cluster_responsibilities = rs[:, short_trials_index]
+
+    fig = plotUtils.getPlotOrthonormalizedLatentAcrossTrials(
         times=times, latentsMeans=l_means, latentsVars=l_vars,
         C=estimatedC, trials_ids=trials_ids,
         latentToPlot=latent_to_plot,
         align_event_times=align_event_times,
+        rewarded_trials_times=rewarded_trials_times,
+        short_trials_cluster_responsibilities=short_trials_cluster_responsibilities,
         events_names=events_names,
         marked_events_times=marked_events_times,
         marked_events_colors=marked_events_colors,
@@ -244,6 +278,8 @@ def main(argv):
     fig.update_layout(title=title)
     fig.write_image(ortonormalized_latent_fig_filename_pattern.format("png"))
     fig.write_html(ortonormalized_latent_fig_filename_pattern.format("html"))
+
+    breakpoint()
 
     fig = svGPFA.plot.plotUtilsPlotly.get2DPlotOrthonormalizedLatentsAcrossTrials(
         trials_times=times, latentsMeans=l_means, latentsVars=l_vars,
