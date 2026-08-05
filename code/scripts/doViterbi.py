@@ -1,11 +1,12 @@
 
 import sys
 import time
-import configparser
-import numpy as np
-import jax.numpy as jnp
-import pickle
+import random
+import os.path
 import argparse
+import configparser
+import pickle
+import numpy as np
 
 import svGPFA.utils.statsUtils
 import hmm.inference
@@ -39,6 +40,14 @@ def main(argv):
     parser.add_argument("--inferred",
                         help="variables were inferred and not estimated",
                         action="store_true")
+    parser.add_argument("--speed_up_factor",
+                        help=("before running the Viterbi algorithm " +
+                              "resample the latents with the original " +
+                              "sampling rate multiplied by this factor, " +
+                              "to test if replay happens at a faster speed"),
+                        type=float,
+                        # default=1.0)
+                        default=50.0)
     parser.add_argument("--estimated_model_filename_pattern",
                         help="estimated model filename pattern", type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
@@ -48,14 +57,15 @@ def main(argv):
     parser.add_argument("--hmm_params_filename_pattern", type=str,
                         help="hmm parameters filename pattern",
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_hmm_params.{:s}")
-    parser.add_argument("--most_prob_states_seq_filename_pattern", type=str,
-                        help="filtering_res filename pattern",
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/train{:08d}_test{:08d}_hmm_most_prob_state_seq.pickle")
+    parser.add_argument("--res_filename_pattern", type=str,
+                        help="results filename pattern",
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_hmm_most_prob_state_seq.{:s}")
     args = parser.parse_args()
 
     train_est_res_number = args.train_est_res_number
     test_est_res_number = args.test_est_res_number
     inferred = args.inferred
+    speed_up_factor = args.speed_up_factor
     if inferred:
         test_model_filename = args.inferred_model_filename_pattern.format(test_est_res_number)
     else:
@@ -64,12 +74,21 @@ def main(argv):
         train_est_res_number, "ini")
     hmm_params_filename = args.hmm_params_filename_pattern.format(
         train_est_res_number, "pickle")
-    most_prob_states_seq_filename = args.most_prob_states_seq_filename_pattern.format(
-        train_est_res_number, test_est_res_number)
+    res_filename_pattern = args.res_filename_pattern
 
     metadata_config = configparser.ConfigParser()
     metadata_config.read(hmm_params_metadata_filename)
     latents_sample_rate = int(metadata_config["estimation_params"]["latents_sample_rate"])
+
+    # build res_filename
+    prefixUsed = True
+    while prefixUsed:
+        res_number = random.randint(0, 10**8)
+        metadata_filename = res_filename_pattern.format(res_number,
+                                                        "metadata")
+        if not os.path.exists(metadata_filename):
+            prefixUsed = False
+    res_filename = res_filename_pattern.format(res_number, "pickle")
 
     with open(test_model_filename, "rb") as f:
         test_est_results = pickle.load(f)
@@ -96,7 +115,7 @@ def main(argv):
     trials_times = svGPFA.utils.miscUtils.getEquispacedTrialsTimes(
         trials_start_times=trials_start_times,
         trials_end_times=trials_end_times,
-        sample_rate=latents_sample_rate)
+        sample_rate=latents_sample_rate*speed_up_factor)
 
     # extract latents means
     l_means = svGPFA.utils.statsUtils.computeLatentsMeansWithEquispacedTrialsTimes(
@@ -130,12 +149,24 @@ def main(argv):
     elapsed_time = time.time() - start_time
     print(f"viterbiEpoched elapsed time={elapsed_time}")
 
+    metadata = configparser.ConfigParser()
+    metadata["params"] = {
+        "train_est_res_number": train_est_res_number,
+        "test_est_res_number": test_est_res_number,
+        "inferred": inferred,
+        "speed_up_factor": speed_up_factor,
+        "hmm_params_filename": hmm_params_filename,
+    }
+    with open(metadata_filename, "w") as f:
+        metadata.write(f)
+    print(f"Saved {metadata_filename}")
+
     results = dict(state_labels=state_labels, trials_times=trials_times,
                    most_prob_states_seq=most_prob_states_seq)
-    with open(most_prob_states_seq_filename, "wb") as f:
+    with open(res_filename, "wb") as f:
         pickle.dump(results, f)
 
-    print(f"Most probable states saved to {most_prob_states_seq_filename}")
+    print(f"Results saved to {res_filename}")
 
     breakpoint()
 
