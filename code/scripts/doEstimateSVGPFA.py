@@ -25,7 +25,8 @@ def main(argv):
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_init_number", help="estimation init number",
-                        type=int, default=17)
+                        type=int,
+                        default=17)
     parser.add_argument("--n_latents", help="number of latent processes",
                         type=int, default=10)
     parser.add_argument("--common_n_ind_points",
@@ -148,21 +149,21 @@ def main(argv):
             trials_start_times=trials_start_times,
             trials_end_times=trials_end_times,
             dynamic_params_spec=dynamic_params_spec,
-            config_file_params_spec=config_file_params_spec)
-            # config_file_params_spec=config_file_params_spec,
-            # default_params_spec=default_params_spec)
+            # config_file_params_spec=config_file_params_spec)
+            config_file_params_spec=config_file_params_spec,
+            default_params_spec=default_params_spec)
 
     kernels_params0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["kernels_params0"]
 
     # build est_results_filename
-    estPrefixUsed = True
-    while estPrefixUsed:
-        estResNumber = random.randint(0, 10**8)
-        est_metadata_filename = \
-            est_metadata_filename_pattern.format(estResNumber)
-        if not os.path.exists(est_metadata_filename):
-            estPrefixUsed = False
-    est_results_filename = est_results_filename_pattern.format(estResNumber)
+    prefix_used = True
+    while prefix_used:
+        res_number = random.randint(0, 10**8)
+        metadata_filename = \
+            est_metadata_filename_pattern.format(res_number)
+        if not os.path.exists(metadata_filename):
+            prefix_used = False
+    est_results_filename = est_results_filename_pattern.format(res_number)
 
     # build kernels
     kernels = svGPFA.utils.miscUtils.buildKernels(
@@ -183,8 +184,11 @@ def main(argv):
 
     # save estimation initial conditions
     estim_res_config = configparser.ConfigParser()
+    estim_res_config["script_info"] = {
+        "name": __file__,
+    }
     estim_res_config["data_params"] = {
-        "trials_ids": selected_trials_ids,
+        "selected_trials_ids": selected_trials_ids,
         "selected_clusters": selected_clusters,
         "clusters_ids": clusters_ids,
         "nLatents": n_latents,
@@ -193,9 +197,9 @@ def main(argv):
     }
     estim_res_config["estimation_params"] = {"est_init_number":
                                              est_init_number}
-    with open(est_metadata_filename, "w") as f:
+    with open(metadata_filename, "w") as f:
         estim_res_config.write(f)
-    print(f"Saved {est_metadata_filename}")
+    print(f"Saved {metadata_filename}")
 
     # initialise estimation
     em = svGPFA.stats.em.EM_JAXopt
@@ -222,15 +226,17 @@ def main(argv):
         max_stepsize=float(est_init_config["optim_params"]["in_steps_max_stepsize"]),
         em_tol=float(est_init_config["optim_params"]["in_steps_em_tol"]),
         max_cont_lb_below_thr=int(est_init_config["optim_params"]["in_steps_max_cont_lb_below_thr"]),
+        n_updates_btw_reports=int(est_init_config["optim_params"]["n_updates_btw_reports"]),
     )
 
     if profile:
         profiling_info_filename_pattern = \
-            profiling_info_filename_pattern.format(estResNumber)
+            profiling_info_filename_pattern.format(res_number)
 
     start_time = time.time()
     res = em.maximize_jaxopt_LBFGS_in_steps(
-        optim_func=em._eval_func_params_as_dict, params0=params0,
+        optim_func=em._eval_func_params_as_dict,
+        params0=params0,
         optim_params=optim_params,
     )
     elapsed_time = time.time() - start_time
@@ -243,7 +249,7 @@ def main(argv):
 
     resultsToSave = res.copy()
     resultsToSave["estimated_params"] = resultsToSave.pop("params")
-    resultsToSave["trials_ids"] = selected_trials_ids
+    resultsToSave["selected_trials_ids"] = selected_trials_ids
     resultsToSave["selected_clusters"] = selected_clusters
     resultsToSave["clusters_ids"] = clusters_ids
     resultsToSave["kernels_types"] = kernels_types
