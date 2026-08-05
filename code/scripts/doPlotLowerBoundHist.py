@@ -3,20 +3,29 @@ import sys
 import configparser
 import pickle
 import argparse
+import numpy as np
+import jax
 
 import svGPFA.plot.plotUtilsPlotly
+
+jax.config.update("jax_enable_x64", True)
+
 
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_res_number", help="estimation result number",
                         type=int,
-                        default=556223)
+                        default=54368807)
+                        # default=556223)
+    parser.add_argument("--first_iteration_to_plot",
+                        help="first iteration to plot", type=int,
+                        default=0)
     parser.add_argument("--inferred",
                         help="variables were inferred and not estimated",
                         action="store_true")
     parser.add_argument("--estimated_model_filename_pattern",
                         help="saved estimated model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parser.add_argument("--inferred_model_filename_pattern",
                         help="saved inferred model filename pattern", type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
@@ -26,6 +35,7 @@ def main(argv):
     args = parser.parse_args()
 
     est_res_number = args.est_res_number
+    first_iteration_to_plot = args.first_iteration_to_plot
     inferred = args.inferred
     estimated_model_filename_pattern = args.estimated_model_filename_pattern
     inferred_model_filename_pattern = args.inferred_model_filename_pattern
@@ -40,17 +50,19 @@ def main(argv):
         est_results = pickle.load(f)
     lower_bound_hist = est_results["lower_bound_hist"]
     elapsed_time_hist = est_results["elapsed_time_hist"]
-
+    iterations = np.arange(len(lower_bound_hist))
 
     fig = svGPFA.plot.plotUtilsPlotly.getPlotLowerBoundHist(
-        lower_bound_hist=lower_bound_hist)
+        iterations=iterations[first_iteration_to_plot:],
+        lower_bound_hist=lower_bound_hist[first_iteration_to_plot:])
     fig.write_image(fig_filename_pattern.format("iteration", "png"))
     fig.write_html(fig_filename_pattern.format("iteration", "html"))
 
     print(f'Figure saved to {fig_filename_pattern.format("iteration", "html")}')
 
     fig = svGPFA.plot.plotUtilsPlotly.getPlotLowerBoundHist(
-        elapsed_time_hist=elapsed_time_hist, lower_bound_hist=lower_bound_hist)
+        elapsed_time_hist=elapsed_time_hist[first_iteration_to_plot:],
+        lower_bound_hist=lower_bound_hist[first_iteration_to_plot:])
     fig.write_image(fig_filename_pattern.format("elapsed_time", "png"))
     fig.write_html(fig_filename_pattern.format("elapsed_time", "html"))
 
