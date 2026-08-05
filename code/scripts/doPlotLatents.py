@@ -4,6 +4,9 @@ import warnings
 import configparser
 import numpy as np
 import pandas as pd
+import os
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.50"
 import jax.numpy as jnp
 import pickle
 import argparse
@@ -40,7 +43,7 @@ def main(argv):
                         action="store_true")
 #     parser.add_argument("--filepath", help="dandi filepath", type=str,
 #                         default="../../data/000140/sub-Jenkins/sub-Jenkins_ses-small_desc-train_behavior+ecephys.nwb")
-    parser.add_argument("--latent_to_plot", help="trial to plot", type=int, default=0)
+    parser.add_argument("--latent_to_plot", help="latent to plot", type=int, default=0)
     parser.add_argument("--latents_to_2D_plot", help="latents to plot in 2D plot",
                         type=str, default="[0,1]")
     parser.add_argument("--latents_to_3D_plot", help="latents to plot in 3D plot",
@@ -77,7 +80,7 @@ def main(argv):
                         help="model filename pattern", type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_{:s}.pickle")
                         # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
-                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
+                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parser.add_argument("--metadata_filename_pattern",
                         help="metadata filename pattern", type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_{:s}_metaData.ini")
@@ -89,13 +92,13 @@ def main(argv):
     parser.add_argument("--clustering_res_filename", type=str,
                         help="clustering result filename",
                         default="../../results/EJT178_implant1/recording6_29-03-2022/80586545_trials_times_clustering_result.pickle")
-    parser.add_argument("--latents_fig_filename_pattern",
-                        help="latents figure filename pattern", type=str,
-                        default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_latent{:03d}.{{:s}}")
     parser.add_argument("--transitions_data_filename",
                         help="transitions data filename",
                         type=str,
                         default="/ceph/sjones/projects/sequence_squad/organised_data/animals/EJT178_implant1/recording6_29-03-2022/behav_sync/2_task/Transition_data_sync.csv")
+    parser.add_argument("--latents_fig_filename_pattern",
+                        help="latents figure filename pattern", type=str,
+                        default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_latent{:03d}.{{:s}}")
     parser.add_argument("--ortonormalized_latent_fig_filename_pattern",
                         help="orthonormalized latent figure filename pattern", type=str,
                         default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_orthonormalized_latent{:03d}.{{:s}}")
@@ -119,7 +122,7 @@ def main(argv):
                                                             "inferredModel")
     else:
         model_filename = args.model_filename_pattern.format(est_res_number,
-                                                            "estimatedModel")
+                                                            "estimation_results")
     if inferred:
         metadata_filename = args.metadata_filename_pattern.format(
             est_res_number, "inference")
@@ -128,8 +131,8 @@ def main(argv):
             est_res_number, "estimation")
     rewarded_trials_times_filename = args.rewarded_trials_times_filename
     clustering_res_filename = args.clustering_res_filename
-    latents_fig_filename_pattern = args.latents_fig_filename_pattern.format(est_res_number, latent_to_plot)
     transitions_data_filename = args.transitions_data_filename
+    latents_fig_filename_pattern = args.latents_fig_filename_pattern.format(est_res_number, latent_to_plot)
     ortonormalized_latent_fig_filename_pattern = args.ortonormalized_latent_fig_filename_pattern.format(est_res_number, latent_to_plot)
     ortonormalized_latents_fig_filename_pattern = args.ortonormalized_latents_fig_filename_pattern
 
@@ -165,8 +168,16 @@ def main(argv):
 
     with open(model_filename, "rb") as f:
         est_results = pickle.load(f)
-    final_lower_bound = est_results["lower_bound_hist"][-1]
-    trials_ids = est_results["trials_ids"].tolist()
+    if "lower_bound_hist" in est_results:
+        final_lower_bound = est_results["lower_bound_hist"][-1]
+    else:
+        final_lower_bound = -est_results["estimated_state"].value.item()
+    if "selected_trials_ids" in est_results:
+        trials_ids = est_results["selected_trials_ids"].tolist()
+    elif "trials_ids" in est_results:
+        trials_ids = est_results["trials_ids"].tolist()
+    else:
+        RuntimeError("either selected_trials_ids or trials_ids should exist in est_results")
     kernels_types = est_results["kernels_types"]
     clusters = est_results["selected_clusters"]
 
@@ -238,6 +249,7 @@ def main(argv):
         latentsSTDs=np.sqrt(l_vars),
         latentToPlot=latent_to_plot,
         trials_ids=trials_ids,
+        indPointsLocs=ind_points_locs,
         align_event_times=align_event_times,
         events_names=events_names,
         marked_events_times=marked_events_times,
@@ -278,8 +290,6 @@ def main(argv):
     fig.update_layout(title=title)
     fig.write_image(ortonormalized_latent_fig_filename_pattern.format("png"))
     fig.write_html(ortonormalized_latent_fig_filename_pattern.format("html"))
-
-    breakpoint()
 
     fig = svGPFA.plot.plotUtilsPlotly.get2DPlotOrthonormalizedLatentsAcrossTrials(
         trials_times=times, latentsMeans=l_means, latentsVars=l_vars,
