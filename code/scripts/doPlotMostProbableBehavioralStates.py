@@ -12,27 +12,12 @@ import hmmUtils
 
 def main(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train_est_res_number",
-                        help="model estimation result number used for learning the HMM model",
-                        type=int, default=54368807)
-    parser.add_argument("--test_est_res_number",
-                        help="model estimation result number used for testing the HMM model",
+    parser.add_argument("--res_number",
+                        help="Viterbi run result number",
                         type=int,
-                        default=91676545)
-                        # default=96281561)
-                        # default=7996538)
-                        # default=57514742)
-                        # default=71005668)
-                        # default=87796368)
-                        # default=99226606)
-                        # default=42833278)
-                        # default=99749566)
-                        # default=88072043)
-                        # default=92418550)
-                        # default=54368807)
-    parser.add_argument("--inferred",
-                        help="variables were inferred and not estimated",
-                        action="store_true")
+                        default=88250367)
+                        # default=63183665)
+                        # default=83727406)
     parser.add_argument("--port_label_col_name",
                         help="column name for port label",
                         type=str, default="Start_Port")
@@ -42,56 +27,49 @@ def main(argv):
     parser.add_argument("--port_exit_times_col_name",
                         help="column name for port exit (ephys) time",
                         type=str, default="P1_OUT_Ephys_TS")
-    parser.add_argument("--estimated_model_filename_pattern",
-                        help="estimated model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
-    parser.add_argument("--inferred_model_filename_pattern",
-                        help="inferred model filename pattern", type=str,
+    parser.add_argument("--est_results_filename_pattern",
+                        help="estimation results filename pattern", type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parser.add_argument("--transitions_data_filename",
                         help="transition data filename", type=str,
                         default="/ceph/sjones/projects/sequence_squad/organised_data/animals/EJT178_implant1/recording6_29-03-2022/behav_sync/2_task/Transition_data_sync.csv")
     parser.add_argument("--most_prob_states_seq_filename_pattern", type=str,
-                        help="filtering_res filename pattern",
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/train{:08d}_test{:08d}_hmm_most_prob_state_seq.pickle")
+                        help="most probable states sequence filename pattern",
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_hmm_most_prob_state_seq.{:s}")
     parser.add_argument("--fig_filename_pattern", type=str,
                         help="figure filename pattern",
-                        default="../../figures/EJT178_implant1/recording6_29-03-2022/train{:08d}_test{:08d}_inferred_hmm_most_prob_state_seq.{:s}")
+                        default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_hmm_most_prob_state_seq.{:s}")
 
     args = parser.parse_args()
 
-    train_est_res_number = args.train_est_res_number
-    test_est_res_number = args.test_est_res_number
-    inferred = args.inferred
+    res_number = args.res_number
     port_label_col_name = args.port_label_col_name
     port_enter_times_col_name = args.port_enter_times_col_name
     port_exit_times_col_name = args.port_exit_times_col_name
-    if inferred:
-        model_filename = args.inferred_model_filename_pattern.format(test_est_res_number)
-    else:
-        model_filename = args.estimated_model_filename_pattern.format(test_est_res_number)
+    est_results_filename_pattern = args.est_results_filename_pattern
     transitions_data_filename = args.transitions_data_filename
-    most_prob_states_seq_filename = args.most_prob_states_seq_filename_pattern.format(
-        train_est_res_number, test_est_res_number)
+    most_prob_states_seq_filename_pattern = args.most_prob_states_seq_filename_pattern
     fig_filename_pattern = args.fig_filename_pattern
 
-    with open(model_filename, "rb") as f:
+    metadata_filename = most_prob_states_seq_filename_pattern.format(res_number,
+                                                                     "metadata")
+    metadata = configparser.ConfigParser()
+    metadata.read(metadata_filename)
+    test_est_res_number = int(metadata["params"]["test_est_res_number"])
+
+    est_results_filename = est_results_filename_pattern.format(test_est_res_number)
+    with open(est_results_filename, "rb") as f:
         est_results = pickle.load(f)
     epochs_times = est_results["epochs_times"]
 
-    # load_res = np.load(most_prob_states_seq_filename)
+    most_prob_states_seq_filename = \
+        most_prob_states_seq_filename_pattern.format(res_number, "pickle")
     with open(most_prob_states_seq_filename, "rb") as f:
         viterbi_res = pickle.load(f)
     trials_times = viterbi_res["trials_times"]
     most_prob_states_seq = viterbi_res["most_prob_states_seq"]
 
     # build continuous_time
-
-    # T, N, _ = trials_times.shape # T number of trials, N number of samples per trial
-    # continuous_times = np.empty(trials_times.shape[0] * trials_times.shape[1])
-    # for t in range(T):
-    #     continuous_times[(t * N):((t + 1) * N)] = trials_times[t, :, 0] + epochs_times[t]
-
     T = len(trials_times)
     continuous_times_list = []
     for t in range(T):
@@ -121,21 +99,13 @@ def main(argv):
     #     exit_times=exit_times)
 
     fig = go.Figure()
-    # trace = go.Bar(x=continuous_times, y=states_seq_true, name="True")
-    # trace = go.Scatter(x=continuous_times, y=states_seq_true, name="True", mode="lines+markers")
-    # fig.add_trace(trace)
-    # trace = go.Bar(x=continuous_times, y=continuous_most_prob_states_seq, name="Estimated")
     trace = go.Scatter(x=continuous_times, y=continuous_most_prob_states_seq, name="Inferred", mode="lines+markers")
     fig.add_trace(trace)
     fig.update_xaxes(title="Time (sec)")
     fig.update_yaxes(title="State Number")
-    html_filename = fig_filename_pattern.format(train_est_res_number,
-                                                test_est_res_number,
-                                                "html")
+    html_filename = fig_filename_pattern.format(res_number, "html")
     fig.write_html(html_filename)
-    png_filename = fig_filename_pattern.format(train_est_res_number,
-                                               test_est_res_number,
-                                               "png")
+    png_filename = fig_filename_pattern.format(res_number, "png")
     fig.write_image(png_filename)
 
     print(f"figure saved to {html_filename}")
