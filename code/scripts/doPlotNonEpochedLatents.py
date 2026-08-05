@@ -2,7 +2,6 @@
 import sys
 import warnings
 import argparse
-import configparser
 import numpy as np
 import pandas as pd
 import jax.numpy as jnp
@@ -19,7 +18,11 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--est_res_number", help="estimation result number",
                         type=int,
-                        default=91676545)
+                        default=29562517)
+                        # default=73628664)
+                        # default=83727406)
+                        # default=84848570)
+                        # default=91676545)
                         # default=35179010)
                         # default=69706576)
                         # default=38426992)
