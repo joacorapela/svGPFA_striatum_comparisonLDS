@@ -25,13 +25,18 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--in_est_res_number", help="input estimation result number",
                         type=int,
-                        default=74582223)
-                        # default=54368807)
+                        # default=74582223)
+                        default=54368807)
                         # default=33576128)
     parser.add_argument("--est_init_number", help="estimation init number",
                         type=int,
-                        default=29)
-                        # default=26)
+                        default=33)
+    parser.add_argument("--precondition", help="precondition estimation",
+                        action="store_true")
+    parser.add_argument("--est_init_filename_pattern",
+                        help="estimation initialization filename pattern",
+                        type=str,
+                        default="../../metadata/{:08d}_estimation_metaData.ini")
     parser.add_argument("--epoched_spikes_times_filename",
                         help="epoched spikes times filename",
                         type=str,
@@ -45,10 +50,10 @@ def main(argv):
                         # default="../../metadata/trialsIDsFrom242To341.csv")
                         # default="../../metadata/trialsIDsFrom142To241.csv")
                         # default="../../metadata/trialsIDsFrom42To141.csv")
-    parser.add_argument("--est_init_filename_pattern",
-                        help="estimation initialization filename pattern",
+    parser.add_argument("--model_curvatures_filename_pattern",
+                        help="model curvatures filename pattern",
                         type=str,
-                        default="../../metadata/{:08d}_estimation_metaData.ini")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_curvatures.pickle")
     parser.add_argument("--est_metadata_filename_pattern",
                         help="estimation result metadata filename pattern",
                         type=str,
@@ -61,9 +66,12 @@ def main(argv):
 
     in_est_res_number = args.in_est_res_number
     est_init_number = args.est_init_number
+    precondition = args.precondition
     est_init_filename_pattern = args.est_init_filename_pattern
     epoched_spikes_times_filename = args.epoched_spikes_times_filename
     trials_ids_filename = args.trials_ids_filename
+    model_curvatures_filename = args.model_curvatures_filename_pattern.format(
+        in_est_res_number)
     est_metadata_filename_pattern = args.est_metadata_filename_pattern
     est_res_filename_pattern = args.est_res_filename_pattern
 
@@ -90,8 +98,6 @@ def main(argv):
     C = estimated_params["C"]
     d = estimated_params["d"]
     kernels_params = estimated_params["kernels_params"]
-
-    breakpoint()
 
     # subset selected_clusters
     spikes_times = striatumUtils.subset_clusters_data(
@@ -175,6 +181,7 @@ def main(argv):
     out_est_metadata["estimation_params"] = {
         "in_est_res_number": in_est_res_number,
         "est_init_number": est_init_number,
+        "precondition": precondition,
     }
 
     # build model_save_filename
@@ -219,15 +226,59 @@ def main(argv):
         )
         return value
 
-    start_time = time.time()
-    res = em.maximize_jaxopt_LBFGS_in_steps(optim_func=optim_func,
-                                            params0=params0,
-                                            optim_params=optim_params,
-                                           )
-    elapsed_time = time.time() - start_time
+    if precondition:
+        with open(model_curvatures_filename, "rb") as f:
+            curvatures = pickle.load(f)
+
+        preconditioning_epsilon = float(
+            est_init["optim_params"]["preconditioning_epsilon"]
+        )
+
+        params_scale = dict(
+            variational_mean = 1.0/(jnp.sqrt(jnp.abs(curvatures["variational_mean"])) + preconditioning_epsilon),
+            variational_chol_vecs = 1.0/(jnp.sqrt(jnp.abs(curvatures["variational_chol_vecs"])) + preconditioning_epsilon),
+            C = 1.0/(jnp.sqrt(jnp.abs(curvatures["C"])) + preconditioning_epsilon),
+            d = 1.0/(jnp.sqrt(jnp.abs(curvatures["d"])) + preconditioning_epsilon),
+            kernels_params = [1.0/(jnp.sqrt(jnp.abs(curvatures["kernels_params"][i]))+preconditioning_epsilon)
+                            for i in range(len(params0["kernels_params"]))],
+            ind_points_locs = 1.0/(jnp.sqrt(jnp.abs(curvatures["ind_points_locs"])) + preconditioning_epsilon),
+        )
+
+        def preconditioned_optim_func(params, additional_params):
+            # Unscale parameters back to original domain using element-wise multiplication
+            unscaled_params = jax.tree_util.tree_map(
+                lambda p, s: p * s, params, params_scale
+            )
+            return optim_func(params=unscaled_params,
+                              additional_params=additional_params)
+
+        scaled_params0 = jax.tree_util.tree_map(
+            lambda p, s: p / s, params0, params_scale
+        )
+
+        start_time = time.time()
+        res = em.maximize_jaxopt_LBFGS_in_steps(optim_func=preconditioned_optim_func,
+                                                params0=scaled_params0,
+                                                optim_params=optim_params,
+                                               )
+        elapsed_time = time.time() - start_time
+
+        unscaled_estimated_params = jax.tree_util.tree_map(
+            lambda p, s: p * s, out_est_res.pop("params"), params_scale
+        )
+    else:
+        start_time = time.time()
+        res = em.maximize_jaxopt_LBFGS_in_steps(optim_func=optim_func,
+                                                params0=params0,
+                                                optim_params=optim_params,
+                                               )
+        elapsed_time = time.time() - start_time
 
     out_est_res = res.copy()
-    out_est_res["estimated_params"] = out_est_res.pop("params")
+    if precondition:
+        out_est_res["estimated_params"] = unscaled_estimated_params
+    else:
+        out_est_res["estimated_params"] = out_est_res.pop("params")
     out_est_res["fixed_params"] = None
     out_est_res["trials_ids"] = selected_trials_ids
     out_est_res["selected_clusters"] = selected_clusters
