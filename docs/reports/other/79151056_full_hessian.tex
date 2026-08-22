@@ -1,0 +1,455 @@
+\documentclass[12pt]{article}
+
+\usepackage{graphicx}
+\usepackage[hypertexnames=false,colorlinks=true,breaklinks]{hyperref}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{natbib}
+\usepackage{apalike}
+\usepackage{amsmath,amssymb}
+
+\title{Full Hessian of a smaller svGPFA model}
+\author{Joaqu\'{i}n Rapela\thanks{j.rapela@ucl.ac.uk}}
+
+\begin{document}
+
+\maketitle
+
+We fitted a smaller svGPFA model (5 trials, 3 latents, 5 inducing points
+locations, and 50 neurons) to behavioral trials 42-46 from Emmett's recordings.
+The model contained 586 parameters (Figure~\ref{fig:nParams}).
+We then calculate the full Hessian of the model parameters, to check the
+interaction between different groups of parameters (variational mean, Cholesky
+representation of the variational covariance, C matrix, d vector, kernel
+parameters, inducing points locations). If the off-diagonal elements of the
+Hessian corresponding to different groups of parameters are small, then an
+Expectation Constrained Maximisation approach is sensible. Otherwise, the
+simultaneous optimisation of all svGPFA parameters should work better.
+
+Figure~\ref{fig:lowerBoundVsIteration} plots the achieved lower bound as a
+function of the number of iterations. This figure does not show problems in the
+estimation.
+
+% General
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/num_params_nLatents3_nTrials5_nIndPoints5_nNeurons50_nParamsAllKernels3.html}{\includegraphics[width=6in]{../../../figures/num_params_nLatents3_nTrials5_nIndPoints5_nNeurons50_nParamsAllKernels3.png}}
+
+    \caption{Number of model parameters.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+    \label{fig:nParams}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_lower_bound_hist_vs_iteration.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_lower_bound_hist_vs_iteration.png}}
+
+    \caption{Lower bound as a function of iteration number.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+    \label{fig:lowerBoundVsIteration}
+
+\end{figure}
+
+% summaries
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_coupling_frobenius_ratio.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_coupling_frobenius_ratio.png}}
+
+    \caption{Frobenius ratio summary of coupling between groups of parameters.
+    Values between 0.1 and 0.3 indicates moderate coupling, and values larger
+    than 0.3 indicate strong coupling.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_coupling_singular_value_ratio.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_coupling_singular_value_ratio.png}}
+
+    \caption{Singular value ratio summary of coupling between groups of parameters.
+    Values between 0.2 and 0.5 indicates moderate coupling, and values larger
+    than 0.5 indicate strong coupling.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_coupling_max_correlation.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_coupling_max_correlation.png}}
+
+    \caption{Maximum correlation summary of coupling between groups of parameters.
+    Values below 0.6 are normal for latent variable models, while values larger
+    than 0.6 indicate that different groups of parameters similarly influence
+    the loss function.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+% kernels_params
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/07091558_kernels_params_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/07091558_kernels_params_curvatures.png}}
+
+    \caption{Distribution of diagonal Hessian coefficients for the kernels parameter group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_kernels_params_kernels_params.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_kernels_params_kernels_params.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    kernels\_params-kernels\_params parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_kernels_params_C.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_kernels_params_C.png}}
+
+    \caption{Distribution of Hessian coefficients for the kernels\_params-C parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_kernels_params_d.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_kernels_params_d.png}}
+
+    \caption{Distribution of Hessian coefficients for the kernels\_params-d parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_kernels_params_ind_points_locs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_kernels_params_ind_points_locs.png}}
+
+    \caption{Distribution of Hessian coefficients for the kernels\_params-ind\_points\_locs parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_kernels_params_variational_chol_vecs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_kernels_params_variational_chol_vecs.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    kernels\_params-variational\_chol\_vecs parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_kernels_params_variational_mean.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_kernels_params_variational_mean.png}}
+
+    \caption{Distribution of Hessian coefficients for the kernels\_params-variational\_mean parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+% C
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/07091558_C_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/07091558_C_curvatures.png}}
+
+    \caption{Distribution of diagonal Hessian coefficients for the C parameter group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_C_C.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_C_C.png}}
+
+    \caption{Distribution of Hessian coefficients for the C-C parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_C_d.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_C_d.png}}
+
+    \caption{Distribution of Hessian coefficients for the C-d parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_C_ind_points_locs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_C_ind_points_locs.png}}
+
+    \caption{Distribution of Hessian coefficients for the C-ind\_points\_locs parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_C_variational_chol_vecs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_C_variational_chol_vecs.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    C-variational\_chol\_vecs parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_C_variational_mean.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_C_variational_mean.png}}
+
+    \caption{Distribution of Hessian coefficients for the C-variational\_mean parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+% d
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/07091558_d_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/07091558_d_curvatures.png}}
+
+    \caption{Distribution of diagonal Hessian coefficients for the d parameter group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_d_d.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_d_d.png}}
+
+    \caption{Distribution of Hessian coefficients for the d-d parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_d_ind_points_locs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_d_ind_points_locs.png}}
+
+    \caption{Distribution of Hessian coefficients for the d-ind\_points\_locs parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_d_variational_chol_vecs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_d_variational_chol_vecs.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    d-variational\_chol\_vecs parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_d_variational_mean.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_d_variational_mean.png}}
+
+    \caption{Distribution of Hessian coefficients for the d-variational\_mean parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+% ind_points_locs
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/07091558_ind_points_locs_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/07091558_ind_points_locs_curvatures.png}}
+
+    \caption{Distribution of diagonal Hessian coefficients for the inducing
+    points locations parameter group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_ind_points_locs_ind_points_locs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_ind_points_locs_ind_points_locs.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    ind\_points\_locs-ind\_points\_locs parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_ind_points_locs_variational_chol_vecs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_ind_points_locs_variational_chol_vecs.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    ind\_points\_locs-variational\_chol\_vecs parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_ind_points_locs_variational_mean.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_ind_points_locs_variational_mean.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    ind\_points\_locs-variational\_mean parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+% variational_chol_vecs
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/07091558_var_chol_vecs_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/07091558_var_chol_vecs_curvatures.png}}
+
+    \caption{Distribution of diagonal Hessian coefficients for the variational
+    covariance (Cholesky representation) parameter group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_variational_chol_vecs_variational_chol_vecs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_variational_chol_vecs_variational_chol_vecs.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    variational\_chol\_vecs-variational\_chol\_vecs parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_variational_chol_vecs_variational_chol_vecs.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_variational_chol_vecs_variational_mean.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    variational\_chol\_vecs-variational\_mean parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+% variational_mean
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/07091558_var_mean_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/07091558_var_mean_curvatures.png}}
+
+    \caption{Distribution of diagonal Hessian coefficients for the
+    variational\_mean parameter group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/79151056_hessian_coefs_variational_mean_variational_mean.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/79151056_hessian_coefs_variational_mean_variational_mean.png}}
+
+    \caption{Distribution of Hessian coefficients for the
+    variational\_mean-variational\_mean parameters group.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+\end{figure}
+
+\end{document}
