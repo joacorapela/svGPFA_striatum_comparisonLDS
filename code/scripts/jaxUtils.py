@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import jax.flatten_util
 
 
-def get_coordinated_curvatures(loss_fn, params, micro_batch_size=10):
+def get_coordinate_curvatures(loss_fn, params, micro_batch_size=10):
     """
     Memory-safe Hessian diagonal calculation for svGPFA or heavy GP models.
     Uses tiny micro-batches (e.g. 10 parameters at a time) to prevent VRAM spikes.
