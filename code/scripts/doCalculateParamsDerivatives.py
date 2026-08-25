@@ -68,6 +68,7 @@ def main(argv):
         est_res = pickle.load(f)
     kernels_types = est_res["kernels_types"]
     estimation_params = est_res["estimation_params"]
+    fixed_params = est_res["fixed_params"]
     estimated_params = est_res["estimated_params"]
     selected_clusters = est_res["selected_clusters"]
     clusters_ids = est_res["clusters_ids"]
@@ -83,9 +84,16 @@ def main(argv):
 
     variational_mean = estimated_params["variational_mean"]
     variational_chol_vecs = estimated_params["variational_chol_vecs"]
-    C = estimated_params["C"]
-    d = estimated_params["d"]
-    kernels_params = estimated_params["kernels_params"]
+    if "C" in estimated_params:
+        C = estimated_params["C"]
+        d = estimated_params["d"]
+    else:
+        C = fixed_params["C"]
+        d = fixed_params["d"]
+    if "kernels_params" in estimated_params:
+        kernels_params = estimated_params["kernels_params"]
+    else:
+        kernels_params = fixed_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
     # subset selected_clusters
