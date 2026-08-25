@@ -28,7 +28,11 @@ def main(argv):
                         default=54368807)
                         # default=33576128)
     parser.add_argument("--est_init_number", help="estimation init number",
-                        type=int, default=26)
+                        type=int,
+                        default=34)
+                        # default=36)
+    parser.add_argument("--precondition", help="precondition estimation",
+                        action="store_true")
     parser.add_argument("--est_init_filename_pattern",
                         help="estimation initialization filename pattern",
                         type=str,
@@ -41,6 +45,10 @@ def main(argv):
                         # default="../../metadata/trialsIDsFrom242To341.csv")
                         # default="../../metadata/trialsIDsFrom142To241.csv")
                         # default="../../metadata/trialsIDsFrom42To141.csv")
+    parser.add_argument("--model_curvatures_filename_pattern",
+                        help="model curvatures filename pattern",
+                        type=str,
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_curvatures.pickle")
     parser.add_argument("--epoched_spikes_times_filename",
                         help="epoched spikes times filename",
                         type=str,
@@ -58,8 +66,11 @@ def main(argv):
 
     in_est_res_number = args.in_est_res_number
     est_init_number = args.est_init_number
+    precondition = args.precondition
     est_init_filename_pattern = args.est_init_filename_pattern
     trials_ids_filename = args.trials_ids_filename
+    model_curvatures_filename = args.model_curvatures_filename_pattern.format(
+        in_est_res_number)
     epoched_spikes_times_filename = args.epoched_spikes_times_filename
     est_metadata_filename_pattern = args.est_metadata_filename_pattern
     est_res_filename_pattern = args.est_res_filename_pattern
@@ -86,7 +97,6 @@ def main(argv):
     variational_chol_vecs = estimated_params["variational_chol_vecs"]
     C = estimated_params["C"]
     d = estimated_params["d"]
-    # kernels_params = estimated_params["kernels_params"]
 
     # subset selected_clusters
     spikes_times = striatumUtils.subset_clusters_data(
@@ -117,38 +127,20 @@ def main(argv):
     est_init = configparser.ConfigParser()
     est_init.read(est_init_filename)
 
-    #    build dynamic parameter specifications
-    args_info = svGPFA.utils.initUtils.getArgsInfo()
-    dynamic_params_spec = svGPFA.utils.initUtils.getParamsDictFromArgs(
-        n_latents=n_latents, n_trials=n_trials, args=vars(args),
-        args_info=args_info)
     #   build config file parameters specification
+    args_info = svGPFA.utils.initUtils.getArgsInfo()
     strings_dict = gcnu_common.utils.config_dict.GetDict(
         config=est_init).get_dict()
     config_file_params_spec = \
         svGPFA.utils.initUtils.getParamsDictFromStringsDict(
             n_latents=n_latents, n_trials=n_trials,
             strings_dict=strings_dict, args_info=args_info)
-    #    build default parameter specificiations
-    default_params_spec = svGPFA.utils.initUtils.getDefaultParamsDict(
-        n_trials=n_trials, n_latents=n_latents,
-        common_n_ind_points=common_n_ind_points)
-    #    finally, get the parameters from the dynamic,
-    #    configuration file and default parameter specifications
-    params, kernels_types, = \
-        svGPFA.utils.initUtils.getParamsAndKernelsTypes(
-            n_trials=n_trials, n_clusters=n_clusters, n_latents=n_latents,
-            trials_start_times=trials_start_times,
-            trials_end_times=trials_end_times,
-            dynamic_params_spec=dynamic_params_spec,
-            # config_file_params_spec=config_file_params_spec)
-            config_file_params_spec=config_file_params_spec,
-            default_params_spec=default_params_spec)
-
-    kernels_params0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["kernels_params0"]
+    kernels_params0, kernels_types = \
+        svGPFA.utils.initUtils.getKernelsParams0AndTypes(
+            n_latents=n_latents,
+            config_file_params_spec=config_file_params_spec)
 
     optim_params = dict(
-        n_quad=int(est_init["optim_params"]["n_quad"]),
         jit=bool(est_init["optim_params"]["in_steps_jit"]),
         maxiter=int(est_init["optim_params"]["in_steps_maxiter"]),
         tol=float(est_init["optim_params"]["in_steps_tol"]),
@@ -161,14 +153,9 @@ def main(argv):
 
     leg_quad_points, leg_quad_weights = \
         svGPFA.utils.miscUtils.getLegQuadPointsAndWeights(
-            n_quad=optim_params["n_quad"],
+            n_quad=int(est_init["optim_params"]["n_quad"]),
             trials_start_times=trials_start_times,
             trials_end_times=trials_end_times)
-    del optim_params["n_quad"]
-    estimation_params["ell_calculation_params"]["leg_quad_points"] = \
-        leg_quad_points
-    estimation_params["ell_calculation_params"]["leg_quad_weights"] = \
-        leg_quad_weights
 
     ind_points_locs = svGPFA.utils.initUtils.buildEquidistantIndPointsLocs0(
         n_latents=n_latents, n_trials=n_trials,
@@ -184,7 +171,7 @@ def main(argv):
     spikes_times_array, valid_spikes_times_mask = \
         svGPFA.utils.miscUtils.buildSpikesTimesArray(spikes_times=spikes_times)
 
-    # save estimation initial conditions
+    # save estimation initial conditions for provenance tracking
     out_est_metadata = configparser.ConfigParser()
     out_est_metadata["script_info"] = {
         "name": __file__,
@@ -200,6 +187,7 @@ def main(argv):
     out_est_metadata["estimation_params"] = {
         "in_est_res_number": in_est_res_number,
         "est_init_number": est_init_number,
+        "precondition": precondition,
     }
 
     # build model_save_filename
@@ -236,26 +224,91 @@ def main(argv):
         C=C,
         d=d,
     )
-    def inferenceOptimFunc(params, additional_params):
+    def optim_func(params, additional_params):
         value = em._eval_func(
             vMean=params["variational_mean"],
             vChol=params["variational_chol_vecs"],
-            C=additional_params["C"], d=additional_params["d"],
+            C=additional_params["C"],
+            d=additional_params["d"],
             kernels_params=params["kernels_params"],
             ind_points_locs=params["ind_points_locs"],
         )
         return value
 
-    start_time = time.time()
-    res = em.maximize_jaxopt_LBFGS_in_steps(optim_func=inferenceOptimFunc,
-                                            params0=params0,
-                                            additional_params=additional_params,
-                                            optim_params=optim_params,
-                                           )
-    elapsed_time = time.time() - start_time
+    if precondition:
+        with open(model_curvatures_filename, "rb") as f:
+            curvatures = pickle.load(f)
 
+        preconditioning_epsilon = float(
+            est_init["optim_params"]["preconditioning_epsilon"]
+        )
+
+        # Prevent extreme scaling by capping scale factors
+        scale_raw = jax.tree_util.tree_map(
+            lambda c: 1.0 / (jnp.sqrt(jnp.abs(c)) + preconditioning_epsilon),
+            curvatures
+        )
+        del scale_raw["C"]
+        del scale_raw["d"]
+
+        # Clip scale factor
+        preconditioning_min_scale_factor = \
+            float(est_init["optim_params"]["preconditioning_min_scale_factor"])
+        preconditioning_max_scale_factor = \
+            float(est_init["optim_params"]["preconditioning_max_scale_factor"])
+        params_scale = jax.tree_util.tree_map(
+            lambda s: jnp.clip(s, a_min=preconditioning_min_scale_factor,
+                               a_max=preconditioning_max_scale_factor),
+            scale_raw
+        )
+
+        def preconditioned_optim_func(params, additional_params):
+            # Unscale parameters back to original domain using element-wise multiplication
+            unscaled_params = jax.tree_util.tree_map(
+                lambda p, s: p * s, params, params_scale
+            )
+            answer = optim_func(params=unscaled_params,
+                                additional_params=additional_params)
+            return answer
+
+        scaled_params0 = jax.tree_util.tree_map(
+            lambda p, s: p / s, params0, params_scale
+        )
+
+        start_time = time.time()
+        res = em.maximize_jaxopt_LBFGS_in_steps(optim_func=preconditioned_optim_func,
+                                                params0=scaled_params0,
+                                                additional_params=additional_params,
+                                                optim_params=optim_params,
+                                               )
+        elapsed_time = time.time() - start_time
+
+        unscaled_estimated_params = jax.tree_util.tree_map(
+            lambda p, s: p * s, res["params"], params_scale
+        )
+        del res["params"]
+
+    else:
+        start_time = time.time()
+        res = em.maximize_jaxopt_LBFGS_in_steps(optim_func=optim_func,
+                                                params0=params0,
+                                                additional_params=additional_params,
+                                                optim_params=optim_params,
+                                               )
+        elapsed_time = time.time() - start_time
+
+    # save the new leg_quad_points and leg_quad_weights
+    estimation_params["ell_calculation_params"]["leg_quad_points"] = \
+        leg_quad_points
+    estimation_params["ell_calculation_params"]["leg_quad_weights"] = \
+        leg_quad_weights
+
+    # save the estimation results for provenance tracking
     out_est_res = res.copy()
-    out_est_res["estimated_params"] = out_est_res.pop("params")
+    if precondition:
+        out_est_res["estimated_params"] = unscaled_estimated_params
+    else:
+        out_est_res["estimated_params"] = out_est_res.pop("params")
     out_est_res["fixed_params"] = additional_params
     out_est_res["trials_ids"] = selected_trials_ids
     out_est_res["selected_clusters"] = selected_clusters
