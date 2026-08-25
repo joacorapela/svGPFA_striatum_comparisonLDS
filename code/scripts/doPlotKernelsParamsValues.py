@@ -20,7 +20,7 @@ def main(argv):
     parser.add_argument("--fig_filename_pattern",
                         help="figure filename pattern",
                         type=str,
-                        default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_kernel_params_values.{{:s}}")
+                        default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_kernels_params_values.{{:s}}")
     args = parser.parse_args()
 
     est_res_number = args.est_res_number
