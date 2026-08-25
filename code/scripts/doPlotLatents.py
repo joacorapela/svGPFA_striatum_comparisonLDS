@@ -78,12 +78,10 @@ def main(argv):
 #                         type=str, default="[circle,circle,circle,circle,circle]")
     parser.add_argument("--model_filename_pattern",
                         help="model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_{:s}.pickle")
-                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
-                        # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parser.add_argument("--metadata_filename_pattern",
                         help="metadata filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_{:s}_metaData.ini")
+                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_metaData.ini")
                         # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inference_metaData.ini")
                         # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_metaData.ini")
     parser.add_argument("--rewarded_trials_times_filename", type=str,
@@ -117,18 +115,8 @@ def main(argv):
     ports_markers_str = args.ports_markers_str.split(",")
     ports_colors_str = args.ports_colors_str.split(",")
     colorscale_name = args.colorscale_name
-    if inferred:
-        model_filename = args.model_filename_pattern.format(est_res_number,
-                                                            "inferredModel")
-    else:
-        model_filename = args.model_filename_pattern.format(est_res_number,
-                                                            "estimation_results")
-    if inferred:
-        metadata_filename = args.metadata_filename_pattern.format(
-            est_res_number, "inference")
-    else:
-        metadata_filename = args.metadata_filename_pattern.format(
-            est_res_number, "estimation")
+    model_filename = args.model_filename_pattern.format(est_res_number)
+    metadata_filename = args.metadata_filename_pattern.format(est_res_number)
     rewarded_trials_times_filename = args.rewarded_trials_times_filename
     clustering_res_filename = args.clustering_res_filename
     transitions_data_filename = args.transitions_data_filename
@@ -192,13 +180,13 @@ def main(argv):
 
     vMean = estimated_params["variational_mean"]
     vChol = estimated_params["variational_chol_vecs"]
-    kernels_params = estimated_params["kernels_params"]
     if inferred:
         C = fixed_params["C"]
         d = fixed_params["d"]
     else:
         C = estimated_params["C"]
         d = estimated_params["d"]
+    kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
     # extract latents means and varances and estimated C
@@ -323,7 +311,7 @@ def main(argv):
     fig.write_image(orthonormalized_latents3D_fig_filename_pattern.format("png"))
     fig.write_html(orthonormalized_latents3D_fig_filename_pattern.format("html"))
 
-    breakpoint()
+    # breakpoint()
 
 
 if __name__ == "__main__":
