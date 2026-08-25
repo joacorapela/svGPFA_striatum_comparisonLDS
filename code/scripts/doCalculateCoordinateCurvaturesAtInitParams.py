@@ -119,6 +119,15 @@ def main(argv):
                 epochs_times=epochs_times,
             )
 
+    leg_quad_weights = params["ell_calculation_params"]["leg_quad_weights"]
+    leg_quad_points = params["ell_calculation_params"]["leg_quad_points"]
+    qMu0 = params["initial_params"]["posterior_on_latents"]["posterior_on_ind_points"]["mean"].squeeze()
+    variational_chol_vecs = params["initial_params"]["posterior_on_latents"]["posterior_on_ind_points"]["cholVecs"]
+    C = params["initial_params"]["embedding"]["C0"]
+    d = params["initial_params"]["embedding"]["d0"]
+    kernels_params0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["kernels_params0"]
+    Z0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["inducing_points_locs0"]
+
     # get estimation parameters
     n_trials = len(spikes_times)
     n_clusters = len(spikes_times[0])
@@ -151,14 +160,13 @@ def main(argv):
             config_file_params_spec=config_file_params_spec,
             default_params_spec=default_params_spec)
 
-    leg_quad_weights = params["ell_calculation_params"]["leg_quad_weights"]
-    leg_quad_points = params["ell_calculation_params"]["leg_quad_points"]
-    qMu0 = params["initial_params"]["posterior_on_latents"]["posterior_on_ind_points"]["mean"].squeeze()
-    variational_chol_vecs = params["initial_params"]["posterior_on_latents"]["posterior_on_ind_points"]["cholVecs"]
-    C = params["initial_params"]["embedding"]["C0"]
-    d = params["initial_params"]["embedding"]["d0"]
-    kernels_params0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["kernels_params0"]
-    Z0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["inducing_points_locs0"]
+    # build kernels
+    kernels = svGPFA.utils.miscUtils.buildKernels(
+        kernels_types=kernels_types, kernels_params=kernels_params0)
+
+    # build spikes_times_array
+    spikes_times_array, valid_spikes_times_mask = \
+        svGPFA.utils.miscUtils.buildSpikesTimesArray(spikes_times=spikes_times)
 
     # build curvatures_filename
     prefix_used = True
@@ -176,6 +184,7 @@ def main(argv):
         "name": __file__,
     }
     curvatures_metadata["params"] = {
+        "micro_batch_size": micro_batch_size,
         "est_init_number": est_init_number,
         "n_latents": n_latents,
         "common_n_ind_points": common_n_ind_points,
@@ -189,14 +198,6 @@ def main(argv):
     with open(curvatures_metadata_filename, "w") as f:
         curvatures_metadata.write(f)
     print(f"Saved {curvatures_metadata_filename}")
-
-    # build kernels
-    kernels = svGPFA.utils.miscUtils.buildKernels(
-        kernels_types=kernels_types, kernels_params=kernels_params0)
-
-    # build spikes_times_array
-    spikes_times_array, valid_spikes_times_mask = \
-        svGPFA.utils.miscUtils.buildSpikesTimesArray(spikes_times=spikes_times)
 
     # initialise loss function
     em = svGPFA.stats.em.EM_JAXopt
@@ -241,7 +242,7 @@ def main(argv):
         return value
 
     # get curvatures
-    curvatures = jaxUtils.get_coordinated_curvatures(
+    curvatures = jaxUtils.get_coordinate_curvatures(
         loss_fn=loss_fn,
         params=params0,
         micro_batch_size=micro_batch_size)
