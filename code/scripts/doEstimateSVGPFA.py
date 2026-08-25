@@ -182,7 +182,7 @@ def main(argv):
     d = params["initial_params"]["embedding"]["d0"]
     Z0 = params["initial_params"]["posterior_on_latents"]["kernels_matrices_store"]["inducing_points_locs0"]
 
-    # save estimation initial conditions
+    # save estimation metdata
     estim_res_config = configparser.ConfigParser()
     estim_res_config["script_info"] = {
         "name": __file__,
