@@ -2,7 +2,7 @@
 import sys
 import pickle
 import argparse
-import jax.numpy as jnp
+import numpy as np
 import plotly.graph_objects as go
 
 
@@ -31,16 +31,20 @@ def main(argv):
     with open(curvatures_filename, "rb") as f:
         curvatures = pickle.load(f)
 
-    C_curvatures = curvatures["C"]
+    C_curvatures = np.array(curvatures["C"])
     n_latents = C_curvatures.shape[1]
 
-    [perc_1, perc_99] = jnp.percentile(C_curvatures, jnp.array([1, 99]))
+    [perc_1, perc_99] = np.percentile(C_curvatures, np.array([1, 99]))
+
+    C_curvatures[
+        np.logical_or(C_curvatures<perc_1, perc_99<C_curvatures)] <- np.nan
 
     fig = go.Figure()
     for k in range(n_latents):
         trace = go.Histogram(x=C_curvatures[:, k], name=f"latent {k}")
         fig.add_trace(trace)
-    fig.update_xaxes(title="Curvature", range=(perc_1, perc_99))
+    # fig.update_xaxes(title="Curvature", range=(perc_1, perc_99))
+    fig.update_xaxes(title="Curvature")
     fig.update_yaxes(title="Count")
     fig.update_layout(title=f"Number of Parameters: {C_curvatures.size}")
 
