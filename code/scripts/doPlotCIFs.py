@@ -40,6 +40,8 @@ def main(argv):
                         # default=71504301)
     parser.add_argument("--cluster_id", help="cluster ID to plot", type=int,
                         default=132)
+    parser.add_argument("--inferred", help="inferred model",
+                        action="store_true")
     parser.add_argument("--bin_size_secs", help="bin size (secs)",
                         type=float, default=0.01)
     parser.add_argument("--ports_to_plot",
@@ -71,6 +73,7 @@ def main(argv):
 
     est_res_number = args.est_res_number
     cluster_id = args.cluster_id
+    inferred = args.inferred
     bin_size_secs = args.bin_size_secs
     ports_to_plot = [int(port_str) for port_str in args.ports_to_plot.split(",")]
     ports_markers_str = args.ports_markers_str.split(",")
@@ -135,12 +138,18 @@ def main(argv):
     # reg_param = est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
     reg_param = 1e-5
     estimated_params = est_results["estimated_params"]
+    fixed_params = est_results["fixed_params"]
 
     vMean = estimated_params["variational_mean"]
     vChol = estimated_params["variational_chol_vecs"]
-    kernels_params = estimated_params["kernels_params"]
-    C = estimated_params["C"]
-    d = estimated_params["d"]
+    if inferred:
+        C = fixed_params["C"]
+        d = fixed_params["d"]
+        kernels_params = fixed_params["kernels_params"]
+    else:
+        C = estimated_params["C"]
+        d = estimated_params["d"]
+        kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
     times = jnp.asarray(leg_quad_points)
@@ -203,7 +212,7 @@ def main(argv):
 
     print("Saved {:s}".format(fig_filename_pattern.format("html")))
 
-    breakpoint()
+    # breakpoint()
 
 
 if __name__ == "__main__":
