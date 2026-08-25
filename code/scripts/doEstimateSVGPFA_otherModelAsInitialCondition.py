@@ -30,7 +30,7 @@ def main(argv):
                         # default=33576128)
     parser.add_argument("--est_init_number", help="estimation init number",
                         type=int,
-                        default=33)
+                        default=34)
     parser.add_argument("--precondition", help="precondition estimation",
                         action="store_true")
     parser.add_argument("--est_init_filename_pattern",
@@ -217,14 +217,14 @@ def main(argv):
         kernels_params=kernels_params,
     )
     def optim_func(params, additional_params):
-        value = em._eval_func(
+        answer = em._eval_func(
             vMean=params["variational_mean"],
             vChol=params["variational_chol_vecs"],
             C=params["C"], d=params["d"],
             kernels_params=params["kernels_params"],
             ind_points_locs=params["ind_points_locs"],
         )
-        return value
+        return answer
 
     if precondition:
         with open(model_curvatures_filename, "rb") as f:
@@ -234,14 +234,21 @@ def main(argv):
             est_init["optim_params"]["preconditioning_epsilon"]
         )
 
-        params_scale = dict(
-            variational_mean = 1.0/(jnp.sqrt(jnp.abs(curvatures["variational_mean"])) + preconditioning_epsilon),
-            variational_chol_vecs = 1.0/(jnp.sqrt(jnp.abs(curvatures["variational_chol_vecs"])) + preconditioning_epsilon),
-            C = 1.0/(jnp.sqrt(jnp.abs(curvatures["C"])) + preconditioning_epsilon),
-            d = 1.0/(jnp.sqrt(jnp.abs(curvatures["d"])) + preconditioning_epsilon),
-            kernels_params = [1.0/(jnp.sqrt(jnp.abs(curvatures["kernels_params"][i]))+preconditioning_epsilon)
-                            for i in range(len(params0["kernels_params"]))],
-            ind_points_locs = 1.0/(jnp.sqrt(jnp.abs(curvatures["ind_points_locs"])) + preconditioning_epsilon),
+        # Prevent extreme scaling by capping scale factors
+        scale_raw = jax.tree_util.tree_map(
+            lambda c: 1.0 / (jnp.sqrt(jnp.abs(c)) + preconditioning_epsilon),
+            curvatures
+        )
+
+        # Clip scale factor
+        preconditioning_min_scale_factor = \
+            float(est_init["optim_params"]["preconditioning_min_scale_factor"]),
+        preconditioning_max_scale_factor = \
+            float(est_init["optim_params"]["preconditioning_max_scale_factor"]),
+        params_scale = jax.tree_util.tree_map(
+            lambda s: jnp.clip(s, a_min=preconditioning_min_scale_factor,
+                               a_max=preconditioning_max_scale_factor),
+            scale_raw
         )
 
         def preconditioned_optim_func(params, additional_params):
@@ -249,8 +256,9 @@ def main(argv):
             unscaled_params = jax.tree_util.tree_map(
                 lambda p, s: p * s, params, params_scale
             )
-            return optim_func(params=unscaled_params,
-                              additional_params=additional_params)
+            answer = optim_func(params=unscaled_params,
+                                additional_params=additional_params)
+            return answer
 
         scaled_params0 = jax.tree_util.tree_map(
             lambda p, s: p / s, params0, params_scale
@@ -264,8 +272,10 @@ def main(argv):
         elapsed_time = time.time() - start_time
 
         unscaled_estimated_params = jax.tree_util.tree_map(
-            lambda p, s: p * s, out_est_res.pop("params"), params_scale
+            lambda p, s: p * s, res["params"], params_scale
         )
+        del res["param"]
+
     else:
         start_time = time.time()
         res = em.maximize_jaxopt_LBFGS_in_steps(optim_func=optim_func,
