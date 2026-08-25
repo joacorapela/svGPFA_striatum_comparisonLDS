@@ -1,12 +1,14 @@
 #!/bin/bash
 
 #SBATCH --job-name=doEstimateSVGPFA_continuation
-#SBATCH --output=../../results/slurmOutputs/doEstimateSVGPFA_continuation_%j.out
-#SBATCH --error=../../results/slurmOutputs/doEstimateSVGPFA_continuation_%j.err
+#SBATCH --output=../../logs/slurmOutputs/doEstimateSVGPFA_continuation_%j.out
+#SBATCH --error=../../logs/slurmOutputs/doEstimateSVGPFA_continuation_%j.err
 #SBATCH --time=04:00:00
 #SBATCH --partition=a100
 #SBATCH --mem=150G
 #SBATCH --gres=gpu:1
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=j.rapela@ucl.ac.uk
 
 # Activate your environment if necessary
 # conda activate myenv
