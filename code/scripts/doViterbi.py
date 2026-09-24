@@ -37,22 +37,16 @@ def main(argv):
                         # type=int, default=88072043)
                         # type=int, default=92418550)
                         # type=int, default=54368807)
-    parser.add_argument("--inferred",
-                        help="variables were inferred and not estimated",
-                        action="store_true")
     parser.add_argument("--speed_up_factor",
                         help=("before running the Viterbi algorithm " +
                               "resample the latents with the original " +
                               "sampling rate multiplied by this factor, " +
                               "to test if replay happens at a faster speed"),
                         type=float,
-                        # default=1.0)
-                        default=50.0)
+                        default=1.0)
+                        # default=50.0)
     parser.add_argument("--estimated_model_filename_pattern",
                         help="estimated model filename pattern", type=str,
-                        default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
-    parser.add_argument("--inferred_model_filename_pattern",
-                        help="inferred model filename pattern", type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     parser.add_argument("--hmm_params_filename_pattern", type=str,
                         help="hmm parameters filename pattern",
@@ -64,12 +58,8 @@ def main(argv):
 
     train_est_res_number = args.train_est_res_number
     test_est_res_number = args.test_est_res_number
-    inferred = args.inferred
     speed_up_factor = args.speed_up_factor
-    if inferred:
-        test_model_filename = args.inferred_model_filename_pattern.format(test_est_res_number)
-    else:
-        test_model_filename = args.estimated_model_filename_pattern.format(test_est_res_number)
+    test_model_filename = args.estimated_model_filename_pattern.format(test_est_res_number)
     hmm_params_metadata_filename = args.hmm_params_filename_pattern.format(
         train_est_res_number, "ini")
     hmm_params_filename = args.hmm_params_filename_pattern.format(
@@ -97,19 +87,20 @@ def main(argv):
     # reg_param = test_est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
     reg_param = 1e-5
     estimated_params = test_est_results["estimated_params"]
-    if inferred:
+    if "fixed_params" in test_est_results:
         fixed_params = test_est_results["fixed_params"]
         # fixed_params = test_est_results["fixed_params"][0]
     trials_start_times = test_est_results["trials_start_times"]
     trials_end_times = test_est_results["trials_end_times"]
 
     vMean = estimated_params["variational_mean"]
-    if inferred:
-        kernels_params = fixed_params["kernels_params"]
+    if "C" in estimated_params:
+        C = estimated_params["C"]
+    elif "C" in fixed_params:
         C = fixed_params["C"]
     else:
-        kernels_params = estimated_params["kernels_params"]
-        C = estimated_params["C"]
+        raise ValueError("kernels_params and C not found in either estimated_ or fixed_params")
+    kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
     trials_times = svGPFA.utils.miscUtils.getEquispacedTrialsTimes(
@@ -153,7 +144,6 @@ def main(argv):
     metadata["params"] = {
         "train_est_res_number": train_est_res_number,
         "test_est_res_number": test_est_res_number,
-        "inferred": inferred,
         "speed_up_factor": speed_up_factor,
         "hmm_params_filename": hmm_params_filename,
     }
