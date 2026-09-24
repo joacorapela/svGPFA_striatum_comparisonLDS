@@ -69,9 +69,6 @@ def main(argv):
                         # default=65922524)
                         # default=74463115)
                         # default=28719499)
-    parser.add_argument("--inferred",
-                        help="variables were inferred and not estimated",
-                        action="store_true")
     parser.add_argument("--ports_to_plot",
                         help="ports to plot", type=str,
                         default="1,2,3,4,5,6,7")
@@ -97,20 +94,16 @@ def main(argv):
                         help="transition data filename", type=str,
                         default="/ceph/sjones/projects/sequence_squad/organised_data/animals/EJT178_implant1/recording6_29-03-2022/behav_sync/2_task/Transition_data_sync.csv")
                         # default="/nfs/gatsbystor/rapela/work/ucl/gatsby-swc/gatsby/svGPFA/repos/projects/svGPFA_striatum/data/Transition_data_sync.csv")
-    parser.add_argument("--estimation_res_filename_pattern",
+    parser.add_argument("--est_results_filename_pattern",
                         help="estimation results filename pattern", type=str,
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
                         # default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimatedModel.pickle")
-    # parser.add_argument("--inferred_model_filename_pattern",
-    #                     help="saved inferred model filename pattern", type=str,
-    #                     default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_inferredModel.pickle")
     parser.add_argument("--latents_fig_filename_pattern",
                         help="latents figure filename pattern", type=str,
                         default="../../figures/EJT178_implant1/recording6_29-03-2022/{:08d}_orthonormalized_nonEpoched_latents.{{:s}}")
     args = parser.parse_args()
 
     est_res_number = args.est_res_number
-    inferred = args.inferred
     ports_to_plot = [int(port_str) for port_str in args.ports_to_plot.split(",")]
     ports_markers_str = args.ports_markers_str.split(",")
     in_ports_linetypes_str = args.in_ports_linetypes_str.split(",")
@@ -119,8 +112,7 @@ def main(argv):
     trials_boundaries_linetypes_str = args.trials_boundaries_linetypes_str.split(",")
     trials_boundaries_colors_str = args.trials_boundaries_colors_str.split(",")
     transition_data_filename = args.transition_data_filename
-    estimation_res_filename_pattern = args.estimation_res_filename_pattern
-    # inferred_model_filename_pattern = args.inferred_model_filename_pattern
+    est_results_filename_pattern = args.est_results_filename_pattern
     latents_fig_filename_pattern = args.latents_fig_filename_pattern.format(est_res_number)
 
     ports_markers = dict(zip(ports_to_plot, ports_markers_str))
@@ -128,35 +120,45 @@ def main(argv):
     out_ports_linetypes = dict(zip(ports_to_plot, out_ports_linetypes_str))
     ports_colors = dict(zip(ports_to_plot, ports_colors_str))
 
-    estimation_res_filename = estimation_res_filename_pattern.format(est_res_number)
+    est_results_filename = est_results_filename_pattern.format(est_res_number)
 
-    with open(estimation_res_filename, "rb") as f:
-        estimation_res = pickle.load(f)
-    final_lower_bound = estimation_res["lower_bound_hist"][-1]
-    trials_ids = estimation_res["trials_ids"].tolist()
-    kernels_types = estimation_res["kernels_types"]
-    clusters = estimation_res["selected_clusters"]
-    leg_quad_points = estimation_res["estimation_params"]["ell_calculation_params"]["leg_quad_points"]
+    with open(est_results_filename, "rb") as f:
+        est_results = pickle.load(f)
+    if "lower_bound_hist" in est_results:
+        final_lower_bound = est_results["lower_bound_hist"][-1]
+    else:
+        final_lower_bound = -est_results["estimated_state"].value.item()
+    if "selected_trials_ids" in est_results:
+        trials_ids = est_results["selected_trials_ids"].tolist()
+    elif "trials_ids" in est_results:
+        trials_ids = est_results["trials_ids"].tolist()
+    else:
+        RuntimeError("either selected_trials_ids or trials_ids should exist in est_results")
+    kernels_types = est_results["kernels_types"]
+    clusters = est_results["selected_clusters"]
+    leg_quad_points = est_results["estimation_params"]["ell_calculation_params"]["leg_quad_points"]
     reg_param = 1e-5
-    estimated_params = estimation_res["estimated_params"]
-    if inferred:
-        fixed_params = estimation_res["fixed_params"]
-        # fixed_params = estimation_res["fixed_params"][0]
-    trials_start_times = estimation_res["trials_start_times"]
-    trials_end_times = estimation_res["trials_end_times"]
-    epochs_times = estimation_res["epochs_times"]
+    estimated_params = est_results["estimated_params"]
+    if "fixed_params" in est_results:
+        fixed_params = est_results["fixed_params"]
+        # fixed_params = est_results["fixed_params"][0]
+    trials_start_times = est_results["trials_start_times"]
+    trials_end_times = est_results["trials_end_times"]
+    epochs_times = est_results["epochs_times"]
 
     vMean = estimated_params["variational_mean"]
     vChol = estimated_params["variational_chol_vecs"]
     # kernels_params = estimated_params["kernels_params"]
-    if inferred:
-        C = fixed_params["C"]
-        d = fixed_params["d"]
-        kernels_params = fixed_params["kernels_params"]
-    else:
+    if "C" in estimated_params and "d" in estimated_params:
         C = estimated_params["C"]
         d = estimated_params["d"]
-        kernels_params = estimated_params["kernels_params"]
+    elif "C" in fixed_params and "d" in fixed_params:
+        C = fixed_params["C"]
+        d = fixed_params["d"]
+    else:
+        raise ValueException("Could not find C and d in estimated_ or fixed_params")
+
+    kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
     l_means, l_vars = svGPFA.utils.statsUtils.computeLatents(
