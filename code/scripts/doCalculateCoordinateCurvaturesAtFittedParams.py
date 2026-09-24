@@ -29,9 +29,6 @@ def main(argv):
                         default=79151056)
                         # default=54368807)
                         # default=33576128)
-    parser.add_argument("--inferred",
-                        help="set this flag if the model was inferred",
-                        action="store_true")
     parser.add_argument("--precondition", help="precondition estimation",
                         action="store_true")
     parser.add_argument("--preconditioning_curvatures_number",
@@ -55,8 +52,8 @@ def main(argv):
                         # default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/96439322_epoched_spikes_times.pickle")
     parser.add_argument("--trials_ids_filename", help="trials ids filename",
                         type=str,
-                        default="../../metadata/trialsIDsFrom42To46.csv")
-                        # default="../../metadata/trialsIDsFrom30100To30199.csv")
+                        # default="../../metadata/trialsIDsFrom42To46.csv")
+                        default="../../metadata/trialsIDsFrom30100To30199.csv")
     parser.add_argument("--metadata_filename_pattern",
                         help="metadata filename pattern",
                         type=str,
@@ -73,7 +70,6 @@ def main(argv):
 
     micro_batch_size = args.micro_batch_size
     est_res_number = args.est_res_number
-    inferred = args.inferred
     precondition = args.precondition
     preconditioning_curvatures_number = args.preconditioning_curvatures_number
     preconditioning_epsilon = args.preconditioning_epsilon
@@ -113,14 +109,15 @@ def main(argv):
 
     variational_mean = estimated_params["variational_mean"]
     variational_chol_vecs = estimated_params["variational_chol_vecs"]
-    if inferred:
-        C = fixed_params["C"]
-        d = fixed_params["d"]
-        kernels_params = fixed_params["kernels_params"]
-    else:
+    kernels_params = estimated_params["kernels_params"]
+    if {"C", "d"}.issubset(set(estimated_params.keys())):
         C = estimated_params["C"]
         d = estimated_params["d"]
-        kernels_params = estimated_params["kernels_params"]
+    elif {"C", "d"}.issubset(set(fixed_params.keys())):
+        C = fixed_params["C"]
+        d = fixed_params["d"]
+    else:
+        raise RuntimeError("C and d not found in estimated_params or fixed_params")
     ind_points_locs = estimated_params["ind_points_locs"]
 
     # get spike_times
