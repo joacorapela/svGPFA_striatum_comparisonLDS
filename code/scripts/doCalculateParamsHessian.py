@@ -61,6 +61,8 @@ def main(argv):
         est_res = pickle.load(f)
     kernels_types = est_res["kernels_types"]
     estimation_params = est_res["estimation_params"]
+    if "fixed_params" in est_res:
+        fixed_params = est_res["fixed_params"]
     estimated_params = est_res["estimated_params"]
     selected_clusters = est_res["selected_clusters"]
     clusters_ids = est_res["clusters_ids"]
@@ -76,9 +78,20 @@ def main(argv):
 
     variational_mean = estimated_params["variational_mean"]
     variational_chol_vecs = estimated_params["variational_chol_vecs"]
-    C = estimated_params["C"]
-    d = estimated_params["d"]
-    kernels_params = estimated_params["kernels_params"]
+    if "C" in estimated_params and "d" in estimated_params:
+        C = estimated_params["C"]
+        d = estimated_params["d"]
+    elif "C" in fixed_params and "d" in fixed_params:
+        C = fixed_params["C"]
+        d = fixed_params["d"]
+    else:
+        raise RuntimeError("Could not find C and d in estimated_ or fixed_params")
+    if "kernels_params" in estimated_params:
+        kernels_params = estimated_params["kernels_params"]
+    elif "kernels_params" in fixed_params:
+        kernels_params = fixed_params["kernels_params"]
+    else:
+        raise RuntimeError("Could not find kernels_params in estimated_ or fixed_params")
     ind_points_locs = estimated_params["ind_points_locs"]
 
     # subset selected_clusters
