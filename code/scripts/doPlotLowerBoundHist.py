@@ -3,6 +3,7 @@ import sys
 import configparser
 import pickle
 import argparse
+import json
 import numpy as np
 import jax
 
@@ -17,6 +18,12 @@ def main(argv):
                         type=int,
                         default=54368807)
                         # default=556223)
+    parser.add_argument("--y_perc",
+                        help=("zoom percentages for y axis "
+                              "(e.g., [1,99]; i.e., exclude 1% of smaller and "
+                              "larger y values)"),
+                        type=str,
+                        default="")
     parser.add_argument("--first_iteration_to_plot",
                         help="first iteration to plot", type=int,
                         default=0)
@@ -35,11 +42,15 @@ def main(argv):
     args = parser.parse_args()
 
     est_res_number = args.est_res_number
+    y_perc_str = args.y_perc
     first_iteration_to_plot = args.first_iteration_to_plot
     inferred = args.inferred
     estimated_model_filename_pattern = args.estimated_model_filename_pattern
     inferred_model_filename_pattern = args.inferred_model_filename_pattern
     fig_filename_pattern = args.fig_filename_pattern.format(est_res_number)
+
+    if y_perc_str:
+        y_perc = tuple(json.loads(args.y_perc))
 
     if inferred:
         model_filename = inferred_model_filename_pattern.format(est_res_number)
@@ -52,9 +63,14 @@ def main(argv):
     elapsed_time_hist = est_results["elapsed_time_hist"]
     iterations = np.arange(len(lower_bound_hist))
 
+    if y_perc_str:
+        y_percentiles = np.percentile(lower_bound_hist, y_perc)
+
     fig = svGPFA.plot.plotUtilsPlotly.getPlotLowerBoundHist(
         iterations=iterations[first_iteration_to_plot:],
         lower_bound_hist=lower_bound_hist[first_iteration_to_plot:])
+    if y_perc_str:
+        fig.update_yaxes(range=y_percentiles)
     fig.write_image(fig_filename_pattern.format("iteration", "png"))
     fig.write_html(fig_filename_pattern.format("iteration", "html"))
 
@@ -63,6 +79,8 @@ def main(argv):
     fig = svGPFA.plot.plotUtilsPlotly.getPlotLowerBoundHist(
         elapsed_time_hist=elapsed_time_hist[first_iteration_to_plot:],
         lower_bound_hist=lower_bound_hist[first_iteration_to_plot:])
+    if y_perc_str:
+        fig.update_yaxes(range=y_percentiles)
     fig.write_image(fig_filename_pattern.format("elapsed_time", "png"))
     fig.write_html(fig_filename_pattern.format("elapsed_time", "html"))
 
