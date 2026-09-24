@@ -23,7 +23,7 @@ jax.config.update("jax_enable_x64", True)
 def main(argv):
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--in_est_res_number", help="estimation result number",
+    parser.add_argument("--est_res_number", help="estimation result number",
                         type=int,
                         default=54368807)
     parser.add_argument("--maxiter", help="maximum number of iterations",
@@ -43,7 +43,7 @@ def main(argv):
                         default="../../results/EJT178_implant1/recording6_29-03-2022/{:08d}_estimation_results.pickle")
     args = parser.parse_args()
 
-    in_est_res_number = args.in_est_res_number
+    est_res_number = args.est_res_number
     maxiter = args.maxiter
     # est_init_number = args.est_init_number
     est_init_filename_pattern = args.est_init_filename_pattern
@@ -52,7 +52,7 @@ def main(argv):
     metadata_filename_pattern = args.metadata_filename_pattern
     est_res_filename_pattern = args.est_res_filename_pattern
 
-    metadata_filename = args.metadata_filename_pattern.format(in_est_res_number)
+    metadata_filename = args.metadata_filename_pattern.format(est_res_number)
     metaData = configparser.ConfigParser()
     metaData.read(metadata_filename)
     epoched_spikes_times_filename = metaData["data_params"]["epoched_spikes_times_filename"]
@@ -69,14 +69,20 @@ def main(argv):
     clusters_ids = epoched_spikes_res["clusters_ids"]
 
     # get estimation results
-    in_est_res_filename = est_res_filename_pattern.format(in_est_res_number)
+    in_est_res_filename = est_res_filename_pattern.format(est_res_number)
     with open(in_est_res_filename, "rb") as f:
         in_est_res = pickle.load(f)
     kernels_types = in_est_res["kernels_types"]
     estimation_params = in_est_res["estimation_params"]
     estimated_params = in_est_res["estimated_params"]
+    fixed_params = in_est_res["fixed_params"]
     selected_clusters = in_est_res["selected_clusters"]
-    selected_trials_ids = in_est_res["selected_trials_ids"]
+    if "selected_trials_ids" in in_est_res:
+        selected_trials_ids = in_est_res["selected_trials_ids"]
+    elif "trials_ids" in in_est_res:
+        selected_trials_ids = in_est_res["trials_ids"]
+    else:
+        raise ValueError("Neiter selected_trials_ids nor trials_ids foud in in_est_res")
 
     leg_quad_points = estimation_params["ell_calculation_params"]["leg_quad_points"]
     leg_quad_weights = estimation_params["ell_calculation_params"]["leg_quad_weights"]
@@ -84,8 +90,14 @@ def main(argv):
     # get estimation parameters
     variational_mean = estimated_params["variational_mean"]
     variational_chol_vecs = estimated_params["variational_chol_vecs"]
-    C = estimated_params["C"]
-    d = estimated_params["d"]
+    if "C" in estimated_params and "d" in estimated_params:
+        C = estimated_params["C"]
+        d = estimated_params["d"]
+    elif "C" in fixed_params and "d" in fixed_params:
+        C = fixed_params["C"]
+        d = fixed_params["d"]
+    else:
+        raise ValueError("C and d could not be find in estimated_param or inferred_params")
     kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
@@ -98,14 +110,14 @@ def main(argv):
 
     # get selected_trials_ids
     spikes_times, trials_start_times, trials_end_times, epochs_times = \
-            striatumUtils.subset_trials_ids_data(
-                selected_trials_ids=selected_trials_ids,
-                trials_ids=trials_ids,
-                spikes_times=spikes_times,
-                trials_start_times=trials_start_times,
-                trials_end_times=trials_end_times,
-                epochs_times=epochs_times,
-            )
+        striatumUtils.subset_trials_ids_data(
+            selected_trials_ids=selected_trials_ids,
+            trials_ids=trials_ids,
+            spikes_times=spikes_times,
+            trials_start_times=trials_start_times,
+            trials_end_times=trials_end_times,
+            epochs_times=epochs_times,
+        )
 
     n_trials = len(spikes_times)
     n_clusters = len(spikes_times[0])
@@ -116,7 +128,6 @@ def main(argv):
     est_init.read(est_init_filename)
 
     optim_params = dict(
-        # n_quad=int(est_init["optim_params"]["n_quad"]),
         jit=bool(est_init["optim_params"]["in_steps_jit"]),
         # maxiter=int(est_init["optim_params"]["in_steps_maxiter"]),
         maxiter=maxiter,
@@ -150,7 +161,8 @@ def main(argv):
     }
     out_est_metadata["estimation_params"] = {
         "est_init_number": est_init_number,
-        "in_est_res_number": in_est_res_number,
+        "in_est_res_number": est_res_number,
+        "maxiter": maxiter,
     }
 
     # build model_save_filename
