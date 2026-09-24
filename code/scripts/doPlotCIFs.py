@@ -40,8 +40,6 @@ def main(argv):
                         # default=71504301)
     parser.add_argument("--cluster_id", help="cluster ID to plot", type=int,
                         default=132)
-    parser.add_argument("--inferred", help="inferred model",
-                        action="store_true")
     parser.add_argument("--bin_size_secs", help="bin size (secs)",
                         type=float, default=0.01)
     parser.add_argument("--ports_to_plot",
@@ -73,7 +71,6 @@ def main(argv):
 
     est_res_number = args.est_res_number
     cluster_id = args.cluster_id
-    inferred = args.inferred
     bin_size_secs = args.bin_size_secs
     ports_to_plot = [int(port_str) for port_str in args.ports_to_plot.split(",")]
     ports_markers_str = args.ports_markers_str.split(",")
@@ -142,14 +139,15 @@ def main(argv):
 
     vMean = estimated_params["variational_mean"]
     vChol = estimated_params["variational_chol_vecs"]
-    if inferred:
-        C = fixed_params["C"]
-        d = fixed_params["d"]
-        kernels_params = fixed_params["kernels_params"]
-    else:
+    if "C" in estimated_params and "d" in estimated_params:
         C = estimated_params["C"]
         d = estimated_params["d"]
-        kernels_params = estimated_params["kernels_params"]
+    elif "C" in fixed_params and "d" in fixed_params:
+        C = fixed_params["C"]
+        d = fixed_params["d"]
+    else:
+        raise RuntimeError("C and d could not be found in estimated_params or fixed_params")
+    kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
     times = jnp.asarray(leg_quad_points)
