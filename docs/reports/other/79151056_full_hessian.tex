@@ -30,7 +30,11 @@ Figure~\ref{fig:lowerBoundVsIteration} plots the achieved lower bound as a
 function of the number of iterations. This figure does not show problems in the
 estimation.
 
-% General
+\section{General Plots}
+
+Figure~\ref{fig:nParams} shows the number of parameter of the estimated model,
+and Figure~\ref{fig:lowerBoundVsIteration} plots the achieved lower bound as a
+function of iteration number.
 
 \begin{figure}
     \centering
@@ -58,7 +62,29 @@ estimation.
 
 \end{figure}
 
-% summaries
+\section{Hessian Summary Plots}
+
+The following figures show different summaries of the coupling strength between
+groups of parameters.
+
+\subsection{Frobenius Ratio}
+
+The Frobenius ratio between parameters in groups A and B is given in
+Eq.~\ref{eq:frobeniusRatio}. It calculates the overall strength of interactions
+of parameters in groups A and B, normalised by the strength of interactions of
+parameters in groups A and B with themselves. It provides an average measure of
+the interactions between different parameters. Values of the Frobenius ratio
+less than 0.1 indicate that the groups of parameters are independent, values
+between 0.1 and 0.3 indicate a moderate interaction, and values larger than 0.3
+show strong coupling.
+
+Figure~\ref{fig:frobeniusRatio} show the calculated Frobenius ratios for the
+estimated model.
+
+\begin{align}
+    \text{FrobeniousRatio}(A,B)=\frac{||H_{AB}||_2}{\sqrt{||H_{AA}||_2||H_{BB}||_2}}
+    \label{eq:frobeniusRatio}
+\end{align}
 
 \begin{figure}
     \centering
@@ -72,7 +98,26 @@ estimation.
     %
     }
 
+    \label{fig:frobeniusRatio}
 \end{figure}
+
+\subsection{Singular Value Ratio}
+
+The maximum singular value of a matrix indicates the maximum stretching that
+the matrix, as a linear system, generates. The singular value ratio between
+parameters in groups A and B is given in Eq.~\ref{eq:singularValueRatio}. It is
+is a measure of extreme directions of interaction between parameters in
+different groups. Values less than 0.2 indicate no interaction, values between
+0.2 and 0.5 indicate moderate directional coupling, and values larger than 0.5
+indicate strong directional coupling.
+
+\begin{align}
+    \text{SingularValueRatio}(A,B)=\frac{\sigma_{max}(H_{AB})}{\sigma_{max}(H_{AA})\sigma_{max}(H_{BB})}
+    \label{eq:singularValueRatio}
+\end{align}
+
+Figure~\ref{fig:singularValueRatio} show the calculated singular value ratios for the
+estimated model.
 
 \begin{figure}
     \centering
@@ -86,7 +131,25 @@ estimation.
     %
     }
 
+    \label{fig:singularValueRatio}
 \end{figure}
+
+\subsection{Maximum Correlation}
+
+The maximum correlation coupling metric measures the maximum interaction
+between any pair of parameters. Its formula is given in
+Eq.~\ref{eq:maxCorrelation}. Values less than 0.2 indicate irrelevant
+interactions, values between 0.2 and 0.6 indicate moderate interactions and
+values larger than 0.6 mean strong interactions.
+
+\begin{align}
+    R_{AB}(i,j)&=\frac{H_{AB}(i,j)}{\sqrt{H_{AA}(i,j)H_{BB}(i,j)}}\nonumber\\
+    \text{MaxCorrelation}(A,B)&=\max_{i,j}{R_{A,B}(i,j)}
+    \label{eq:maxCorrelation}
+\end{align}
+
+Figure~\ref{fig:maxCorrelation} show the calculated maximum correlations for
+the estimated model.
 
 \begin{figure}
     \centering
@@ -101,6 +164,7 @@ estimation.
     %
     }
 
+    \label{fig:maxCorrelation}
 \end{figure}
 
 % kernels_params
