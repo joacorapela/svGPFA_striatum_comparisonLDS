@@ -38,9 +38,6 @@ def main(argv):
                         # default=33576128)
                         # default=74463115)
                         # default=71504301)
-    parser.add_argument("--inferred",
-                        help="variables were inferred and not estimated",
-                        action="store_true")
 #     parser.add_argument("--filepath", help="dandi filepath", type=str,
 #                         default="../../data/000140/sub-Jenkins/sub-Jenkins_ses-small_desc-train_behavior+ecephys.nwb")
     parser.add_argument("--latent_to_plot", help="latent to plot", type=int, default=0)
@@ -106,7 +103,6 @@ def main(argv):
     args = parser.parse_args()
 
     est_res_number = args.est_res_number
-    inferred = args.inferred
 #     filepath = args.filepath
     latent_to_plot = args.latent_to_plot
     latents_to_3D_plot = [int(str) for str in args.latents_to_3D_plot[1:-1].split(",")]
@@ -175,17 +171,20 @@ def main(argv):
     # reg_param = est_results["estimation_params"]["optim_params"]["prior_cov_reg_param"]
     reg_param = 1e-5
     estimated_params = est_results["estimated_params"]
-    if inferred:
+    if "fixed_params" in est_results:
         fixed_params = est_results["fixed_params"]
 
     vMean = estimated_params["variational_mean"]
     vChol = estimated_params["variational_chol_vecs"]
-    if inferred:
+    if "C" in estimated_params and "d" in estimated_params:
+        C = estimated_params["C"]
+        d = estimated_params["d"]
+    elif "C" in fixed_params and "d" in fixed_params:
         C = fixed_params["C"]
         d = fixed_params["d"]
     else:
-        C = estimated_params["C"]
-        d = estimated_params["d"]
+        raise ValueException("Could not find C and d in estimated_ or fixed_params")
+
     kernels_params = estimated_params["kernels_params"]
     ind_points_locs = estimated_params["ind_points_locs"]
 
