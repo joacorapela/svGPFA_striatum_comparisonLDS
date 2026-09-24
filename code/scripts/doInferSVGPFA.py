@@ -29,7 +29,8 @@ def main(argv):
                         # default=33576128)
     parser.add_argument("--est_init_number", help="estimation init number",
                         type=int,
-                        default=34)
+                        default=41)
+                        # default=34)
                         # default=36)
     parser.add_argument("--precondition", help="precondition estimation",
                         action="store_true")
@@ -39,7 +40,8 @@ def main(argv):
                         default="../../metadata/{:08d}_estimation_metaData.ini")
     parser.add_argument("--trials_ids_filename", help="trials ids filename",
                         type=str,
-                        default="../../metadata/trialsIDsFrom30100To30199.csv")
+                        default="../../metadata/trialsIDsFrom40100To40199.csv")
+                        # default="../../metadata/trialsIDsFrom30100To30199.csv")
                         # default="../../metadata/trialsIDsFrom30200To30299.csv")
                         # default="../../metadata/trialsIDsFrom30000To30099.csv")
                         # default="../../metadata/trialsIDsFrom242To341.csv")
@@ -52,7 +54,9 @@ def main(argv):
     parser.add_argument("--epoched_spikes_times_filename",
                         help="epoched spikes times filename",
                         type=str,
-                        default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/23323766_pseudo_epoched_spikes_times.pickle")
+                        default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/79695807_pseudo_epoched_spikes_times.pickle")
+                        # default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/23323766_pseudo_epoched_spikes_times.pickle")
+                        # default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/23323766_pseudo_epoched_spikes_times.pickle")
                         # default="../../../svGPFA_striatum/results/EJT178_implant1/recording6_29-03-2022/42430740_shuffled_pseudo_epoched_spikes_times.pickle")
     parser.add_argument("--est_metadata_filename_pattern",
                         help="estimation result metadata filename pattern",
