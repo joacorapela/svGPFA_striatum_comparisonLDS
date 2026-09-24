@@ -1,0 +1,99 @@
+\documentclass[12pt]{article}
+
+\usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage[colorlinks]{hyperref}
+
+\newcommand{\estNumber}{52098333}
+
+\begin{document}
+
+% Lower bound
+
+\begin{figure}
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/num_params_nLatents10_nTrials100_nIndPoints15_nNeurons208_nParamsAllKernels10.html}{\includegraphics[width=6in]{../../../figures/num_params_nLatents10_nTrials100_nIndPoints15_nNeurons208_nParamsAllKernels10.png}}
+    \caption{Number of parameters for an SVGPFA model configured with 10
+    latents, 100 trials, 15 inducing points, 200 neurons and 1 parameter per
+    kernel.}
+\end{figure}
+
+\begin{comment}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_lower_bound_hist_vs_iteration.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_lower_bound_hist_vs_iteration.png}}
+    \caption{Lower bound as a function of the number of iterations.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_lower_bound_hist_diff_vs_iteration.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_lower_bound_hist_diff_vs_iteration.png}}
+    \caption{Lower bound difference as a function of the number of iterations.}
+\end{figure}
+
+\end{comment}
+
+
+% Derivatives
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_var_mean_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_var_mean_derivatives.png}}
+    \caption{Derivatives of variational mean parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_var_chol_vecs_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_var_chol_vecs_derivatives.png}}
+    \caption{Derivatives of the variational covariance Cholesky parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_C_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_C_derivatives.png}}
+    \caption{Derivatives of the C matrix parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_d_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_d_derivatives.png}}
+    \caption{Derivatives of the d vector parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_kernel_params_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_kernel_params_derivatives.png}}
+    \caption{Derivatives of the kernels parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_ind_points_locs_params_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_ind_points_locs_derivatives.png}}
+    \caption{Derivatives of the inducing point locations parameters.}
+\end{figure}
+
+% Curvatures
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_var_mean_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_var_mean_curvatures.png}}
+    \caption{Curvatures of variational mean parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_var_chol_vecs_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_var_chol_vecs_curvatures.png}}
+    \caption{Curvatures of the variational covariance Cholesky parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_C_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_C_curvatures.png}}
+    \caption{Curvatures of the C matrix parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_d_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_d_curvatures.png}}
+    \caption{Curvatures of the d vector parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_kernel_params_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_kernel_params_curvatures.png}}
+    \caption{Curvatures of the kernels parameters.}
+\end{figure}
+
+\begin{figure}
+    \href{https://www.gatsby.ucl.ac.uk/~rapela/svGPFA/reports/eval_max_20260726/figures/\estNumber_ind_points_locs_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_ind_points_locs_curvatures.png}}
+    \caption{Curvatures of the inducing point locations parameters.}
+\end{figure}
+
+\end{document}
