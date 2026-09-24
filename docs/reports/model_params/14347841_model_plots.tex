@@ -1,0 +1,756 @@
+\documentclass[12pt]{article}
+
+\usepackage{graphicx}
+\usepackage[hypertexnames=false,colorlinks=true,breaklinks]{hyperref}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage{natbib}
+\usepackage{apalike}
+\usepackage{amsmath,amssymb}
+\usepackage[nofiglist]{endfloat}
+
+\newcommand{\estNumber}{14347841}
+\newcommand{\epochNumber}{23323766}
+\newcommand{\viterbiNumber}{05050901}
+\newcommand{\curNumber}{39272809}
+
+\title{Plots for model \estNumber}
+\author{Joaqu\'{i}n Rapela\thanks{j.rapela@ucl.ac.uk}}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Here I use svGPFA~\citep{dunckerAndSahani18} to explore the low dimensional
+structure of Emmett's switching-task recordings.
+
+\section{Methods}
+
+\subsection{svGPFA model}
+
+The svGPFA model estimates $K$ latent variables in the form of Gaussian
+processes:
+
+\begin{align*}
+    x_k^{(r)}(t)\sim GP(\mu_k(t), \kappa_k(t,t'))\quad k=1,\ldots,K
+\end{align*}
+
+\noindent I concatenate the latent variables $x_k^{(r)}(t)$ into a latent vector
+$\mathbf{x}^{(r)}(t)$:
+
+\begin{align}
+    \mathbf{x}^{(r)}(t)=\left[\begin{array}{c}
+        x_1^{(r)}(t)\\
+                            \vdots\\
+                            x_K^{(r)}(t)
+                        \end{array}\right]
+    \label{eq:latentsVector}
+\end{align}
+
+The latent variables are combined linearly to produced the log pre-intensity,
+$\mathbf{h}^{(r)}(t)=[h_1^{(r)}(t),\ldots,h_N^{(r)}(t)]^\intercal$, where
+$h_n^{(r)}(t)$ is the log
+pre-intensity of neuron $n$ and trial $r$, for a total of $N$ neurons:
+
+\begin{align}
+    \mathbf{h}^{(r)}(t)=C\mathbf{x}^{(r)}(t)+\mathbf{d}
+    \label{eq:logPreIntensity}
+\end{align}
+
+The log pre-intensity of neuron $n$ and trial $r$ is exponentiated to produce the conditional
+intensity function of neuron $n$ and trial $r$:
+
+\begin{align}
+    \lambda_n^{(r)}(t)=\exp(h_n^{(r)}(t))
+    \label{eq:cif}
+\end{align}
+
+\noindent which can be interpreted as the instantaneous firing rate of neuron
+$n$ and trial $r$ at time $t$.
+
+The conditional intensity function of neuron $n$ in trial $r$ is used to calculate the
+probability of spikes $\{t_{i,n}\}_{i=1}^{\Phi(n,r)}$ in a trial $r$ of length $\tau$:
+
+\begin{align*}
+    P(\{t_{i,n}\}_{i=1}^{\Phi(n,r)}|\lambda_n^{(r)}(t))=\exp\left(-\int_0^\tau\lambda_n^{(r)}(t)dt\right)\prod_{i=1}^{\Phi(n,r)}\lambda_n^{(r)}(t_{i,n})
+\end{align*}
+
+\section{Results}
+
+% \listoffigures
+
+\subsection{Data}
+
+We analyzed the spiking activity of all striatal neurons (neuron indices 0-207)
+in electrophysiological recording
+\texttt{EJT178\_implant1/recording6\_29\-03\-2022}.
+%
+Figure~\ref{fig:spikeTimes} plots a sample of spike times used in this
+analysis.
+
+We epoched the recordings from 0.2 seconds before to mouse entered the first
+port (port 2) to 0.2 seconds after it exited the last port (port 7).
+%
+Figures~\ref{fig:spikeTimesTrialAt4311.70}-\ref{fig:spikeTimesTrialAt6063.01}
+and
+figures~\ref{fig:spikeTimesTrialAt6742.00}-\ref{fig:spikeTimesTrialAt7238.00}
+plot spike times from behavioral and non-behavioral trials, respectively.
+
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/spike_times_start4045.00_end4345.00.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/spike_times_start4045.00_end4345.00.png}}
+
+    \caption{Example spikes times used in this analysis. We used recording
+    session \texttt{EJT178\_implant1/recording6\_29-03-2022} and neurons
+    indices 0 to 207 in the striatum.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:spikeTimes}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/43952638_epoched_spikes_times_trialID20059.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/43952638_epoched_spikes_times_trialID20059.png}}
+
+    \caption{Example spikes times from the behavioral trial at time 4311.70~sec, from recording
+    session \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:spikeTimesTrialAt4311.70}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/43952638_epoched_spikes_times_trialID20061.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/43952638_epoched_spikes_times_trialID20061.png}}
+
+    \caption{Example spikes times from the behavioral trial at time 4320.08~sec, from recording
+    session \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:spikeTimesTrialAt4320.08}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/43952638_epoched_spikes_times_trialID20084.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/43952638_epoched_spikes_times_trialID20084.png}}
+
+    \caption{Example spikes times from the behavioral trial at time 4448.36~sec, from recording
+    session \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:spikeTimesTrialAt4448.36}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/43952638_epoched_43952638_epoched_spikes_times_trialID20378.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/43952638_epoched_spikes_times_trialID20378.png}}
+
+    \caption{Example spikes times from the behavioral trial at time 6063.01~sec, from recording
+    session \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:spikeTimesTrialAt6063.01}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/23323766_pseudo_epoched_spikes_times_trialID30185.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/23323766_pseudo_epoched_spikes_times_trialID30185.png}}
+
+    \caption{Example spikes times from the non-behavioral trial at time 6742.00~sec, from recording
+    session \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:spikeTimesTrialAt6742.00}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/23323766_pseudo_epoched_spikes_times_trialID30309.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/23323766_pseudo_epoched_spikes_times_trialID30309.png}}
+
+    \caption{Example spikes times from the non-behavioral trial at time 7238.00~sec, from recording
+    session \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:spikeTimesTrialAt7238.00}
+\end{figure}
+
+Figures~\ref{fig:smoothedSpikesC019}-\ref{fig:smoothedSpikesC180} show examples
+of smoothed spikes for six clusters.
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID019.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID019.png}}
+
+    \caption{Example smoothed spikes times for cluster 19 and all behavioral
+    trials, from recording session
+    \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:smoothedSpikesC019}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID132.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID132.png}}
+
+    \caption{Example smoothed spikes times for cluster 132 and all behavioral
+    trials, from recording session
+    \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:smoothedSpikesC132}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID146.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID146.png}}
+
+    \caption{Example smoothed spikes times for cluster 146 and all behavioral
+    trials, from recording session
+    \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:smoothedSpikesC146}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID159.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID159.png}}
+
+    \caption{Example smoothed spikes times for cluster 159 and all behavioral
+    trials, from recording session
+    \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:smoothedSpikesC159}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID160.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID160.png}}
+
+    \caption{Example smoothed spikes times for cluster 160 and all behavioral
+    trials, from recording session
+    \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:smoothedSpikesC160}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID180.html}{\includegraphics[width=6in]{../../../../svGPFA_striatum/figures/EJT178_implant1/recording6_29-03-2022/\epochNumber_smoothed_spikes_gfSTD0.100000_binned0.01sec_clusterID180.png}}
+
+    \caption{Example smoothed spikes times for cluster 180 and all behavioral
+    trials, from recording session
+    \texttt{EJT178\_implant1/recording6\_29-03-2022}.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:smoothedSpikesC180}
+
+\end{figure}
+
+\subsection{Achieved Lower Bounds}
+
+Figures~\ref{fig:lowerBoundVsIteration} and-\ref{fig:lowerBoundVsElapsedTime}
+show the achieved lower bounds as a function of iteration number and elapsed
+time.
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_lower_bound_hist_vs_iteration.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_lower_bound_hist_vs_iteration.png}}
+    \caption{Achieved lower bound as a function of iteration number.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:lowerBoundVsIteration}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_lower_bound_hist_vs_elapsed_time.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_lower_bound_hist_vs_elapsed_time.png}}
+    \caption{Achieved lower bound as a function of elapsed time.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:lowerBoundVsElapsedTime}
+
+\end{figure}
+
+\subsection{Parameters Derivatives}
+
+Figures~\ref{fig:derivativesEndVarMean}-\ref{fig:derivativesEndIndPointsLocs}
+show derivatives of different groups of model parameters at the end of the
+optimisation process.
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_var_mean_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_var_mean_derivatives.png}}
+    \caption{Derivatives of the variational mean parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:derivativesEndVarMean}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_var_chol_vecs_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_var_chol_vecs_derivatives.png}}
+    \caption{Derivatives of the variational Cholesky parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:derivativesEndVarCholVecs}
+
+\end{figure}
+
+\begin{comment}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_C_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_C_derivatives.png}}
+    \caption{Derivatives of the C parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:derivativesEndC}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_d_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_d_derivatives.png}}
+    \caption{Derivatives of the d parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:derivativesEndd}
+
+\end{figure}
+
+\end{comment}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_kernels_params_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_kernels_params_derivatives.png}}
+    \caption{Derivatives of the kernels parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:derivativesEndKernels}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_ind_points_locs_derivatives.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_ind_points_locs_derivatives.png}}
+    \caption{Derivatives of the inducing point location parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:derivativesEndIndPointsLocs}
+
+\end{figure}
+
+\subsection{Parameters Curvatures}
+
+Figures~\ref{fig:curvaturesEndVarMean}-\ref{fig:curvaturesEndIndPointsLocs}
+show curvatures of different groups of model parameters at the end of the
+optimisation process.
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\curNumber_var_mean_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\curNumber_var_mean_curvatures.png}}
+    \caption{Curvatures of the variational mean parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:curvaturesEndVarMean}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\curNumber_var_chol_vecs_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\curNumber_var_chol_vecs_curvatures.png}}
+    \caption{Curvatures of the variational Cholesky parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:curvaturesEndVarCholVecs}
+
+\end{figure}
+
+\begin{comment}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\curNumber_C_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\curNumber_C_curvatures.png}}
+    \caption{Curvatures of the C parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:curvaturesEndC}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\curNumber_d_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\curNumber_d_curvatures.png}}
+    \caption{Curvatures of the d parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:curvaturesEndd}
+
+\end{figure}
+
+\end{comment}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\curNumber_kernels_params_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\curNumber_kernels_params_curvatures.png}}
+    \caption{Curvatures of the kernel parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:curvaturesEndKernels}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\curNumber_ind_points_locs_curvatures.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\curNumber_ind_points_locs_curvatures.png}}
+    \caption{Curvatures of the inducing point location parameters at the end of the
+    optimisation.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:curvaturesEndIndPointsLocs}
+
+\end{figure}
+
+\subsection{Kernels lengthscales}
+
+Figure~\ref{fig:kernelsLengthscales} plots the kernels lengthscales.
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_kernels_params_values.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_kernels_params_values.png}}
+
+    \caption{Kernels parameters.}
+
+    \label{fig:kernelsLengthscales}
+
+\end{figure}
+
+\subsection{Latents}
+
+Figures~\ref{fig:latent000}-\ref{fig:latent002} plot the first six
+non-orthogonalised latents.
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_latent000.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_latent000.png}}
+
+    \caption{Non-orthogonalised latent zero across trials.}
+
+    \label{fig:latent000}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_latent001.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_latent001.png}}
+
+    \caption{Non-orthogonalised latent one across trials.}
+
+    \label{fig:latent001}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_latent002.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_latent002.png}}
+
+    \caption{Non-orthogonalised latent two across trials.}
+
+    \label{fig:latent002}
+
+\end{figure}
+
+Figure~\ref{fig:oLatent000}-\ref{fig:oLatent002} plot the first three
+orthogonalised latents.
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_orthonormalized_latent000.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_orthonormalized_latent000.png}}
+
+    \caption{Orthogonalised latent zero across trials.}
+
+    \label{fig:oLatent000}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_orthonormalized_latent001.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_orthonormalized_latent001.png}}
+
+    \caption{Orthogonalised latent one across trials.}
+
+    \label{fig:oLatent001}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_orthonormalized_latent002.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_orthonormalized_latent002.png}}
+
+    \caption{Orthogonalised latent two across trials.}
+
+    \label{fig:oLatent002}
+
+\end{figure}
+
+Figur~\ref{fig:oLatents000_001} plots latent zero against latent 1.
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_orthonormalized_latents0_1_.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_orthonormalized_latents0_1_.png}}
+
+    \caption{Orthogonalised latents zero and one plotted against each other.}
+
+    \label{fig:oLatents000_001}
+
+\end{figure}
+
+Figur~\ref{fig:oLatents000_001_002} plots latent zero, latent 1 and latent 2
+against each other.
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_orthonormalized_latents0_1_2_.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_orthonormalized_latents0_1_2_.png}}
+
+    \caption{Orthogonalised latents zero, one and two plotted against each other.}
+
+    \label{fig:oLatents000_001_002}
+
+\end{figure}
+
+Figure~\ref{fig:concatenatedLatents} shows all latents concatenated on time.
+
+\begin{figure}
+    \centering
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_orthonormalized_nonEpoched_latents.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_orthonormalized_nonEpoched_latents.png}}
+    \caption{Orthonormalised latent variables ($\mathbf{x}(t)$ in
+    Eq.~\ref{eq:latentsVector}) inferred for data in the behavioral period
+    trials used to estimate the svGPFA model parameters (i.e., trials 42-141).
+    %
+    Trials have been concatenated in continuous time.
+    %
+    The colored vertical lines indicate `poke\_in` times, with
+    green, red, blue, yellow, purple, cyan and magenta corresponding to ports
+    1 to 7, respectively.
+    %
+    The correct sequence is $2\rightarrow 1\rightarrow 6\rightarrow 3\rightarrow 7$
+    corresponding to
+    $\text{red}\rightarrow\text{green}\rightarrow\text{blue}\rightarrow\text{cyan}\rightarrow\text{magenta}$.
+    %
+    Click on the image to get its interactive version.
+    %
+    }
+
+    \label{fig:concatenatedLatents}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\viterbiNumber_hmm_most_prob_state_seq.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\viterbiNumber_hmm_most_prob_state_seq.png}}
+
+    \caption{Inferred behavioral states, when estimation was done with data in
+    the behavioral period and inference was done with data in the post-behavioral
+    period between 6400 and 6800 seconds.}
+
+    \label{fig:inferredStatesTest6400_6800}
+\end{figure}
+
+\subsection{Conditional intensity functions}
+
+Figures~\ref{fig:cif019}-\ref{fig:cif180} show examples of conditional
+intensity functions for the same clusters shown in
+Figures~\ref{fig:smoothedSpikesC019}-\ref{fig:smoothedSpikesC180}.
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_CIF_clusterID019.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_CIF_clusterID019.png}}
+
+    \caption{Conditional intensity function for cluster 19 and all behavioral
+    trials. Click on the image to get its interactive version.}
+
+    \label{fig:cif019}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_CIF_clusterID132.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_CIF_clusterID132.png}}
+
+    \caption{Conditional intensity function for cluster 132 and all behavioral
+    trials. Click on the image to get its interactive version.}
+
+    \label{fig:cif132}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_CIF_clusterID146.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_CIF_clusterID146.png}}
+
+    \caption{Conditional intensity function for cluster 146 and all behavioral
+    trials. Click on the image to get its interactive version.}
+
+    \label{fig:cif146}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_CIF_clusterID159.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_CIF_clusterID159.png}}
+
+    \caption{Conditional intensity function for cluster 159 and all behavioral
+    trials. Click on the image to get its interactive version.}
+
+    \label{fig:cif159}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_CIF_clusterID160.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_CIF_clusterID160.png}}
+
+    \caption{Conditional intensity function for cluster 160 and all behavioral
+    trials. Click on the image to get its interactive version.}
+
+    \label{fig:cif160}
+
+\end{figure}
+
+\begin{figure}
+    \centering
+
+    \href{http://www.gatsby.ucl.ac.uk/~rapela/emmett/reports/svgpfa_20260307/figures/\estNumber_CIF_clusterID180.html}{\includegraphics[width=6in]{../../../figures/EJT178_implant1/recording6_29-03-2022/\estNumber_CIF_clusterID180.png}}
+
+    \caption{Conditional intensity function for cluster 180 and all behavioral
+    trials. Click on the image to get its interactive version.}
+
+    \label{fig:cif180}
+
+\end{figure}
+
+\bibliographystyle{apalike}
+\bibliography{latentVariableModels}
+
+\end{document}
